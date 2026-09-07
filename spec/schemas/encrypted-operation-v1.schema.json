@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yozen.org/e2ee-notes/encrypted-operation-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "suite", "objectID", "nonce", "ciphertext"],
+  "properties": {
+    "version": {"const": 1},
+    "suite": {"const": "AES-256-GCM"},
+    "objectID": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nonce": {"type": "string", "contentEncoding": "base64"},
+    "ciphertext": {"type": "string", "contentEncoding": "base64"}
+  }
+}
+

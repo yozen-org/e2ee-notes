@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yozen.org/e2ee-notes/operation-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "operationID", "noteID", "deviceID", "sequence", "timestampMicros", "kind"],
+  "properties": {
+    "version": {"const": 1},
+    "operationID": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "noteID": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "deviceID": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "timestampMicros": {"type": "integer"},
+    "kind": {"enum": ["create", "update", "delete"]},
+    "baseOperationID": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "title": {"type": "string"},
+    "body": {"type": "string"}
+  }
+}
+

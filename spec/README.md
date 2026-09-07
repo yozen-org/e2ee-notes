@@ -6,3 +6,7 @@ deterministic test vectors, and passing Dart plus independent reference tests.
 
 The first formats cover vault headers, recipient key envelopes, encrypted
 operations, and immutable storage object names.
+
+Implemented specifications:
+
+- [Operation protocol version 1](OPERATION_V1.md)
