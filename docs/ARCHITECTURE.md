@@ -41,6 +41,12 @@ edit note
 Another authorized device unwraps the same `K`, lists immutable objects,
 authenticates and decrypts them locally, and rebuilds note state.
 
+During M1, the application bootstrap creates a random software vault key and
+device ID in the platform application-support directory. Only the `storage/`
+subdirectory is the provider root. The plaintext software key is a temporary
+local bootstrap mechanism, not the intended security boundary; M2 replaces it
+with a hardware-wrapped vault-key envelope.
+
 The initial Dart filesystem adapter enforces immutability within normal
 single-process application use. Cross-process atomic create and provider-level
 conditional writes are explicit follow-up requirements before concurrent sync.

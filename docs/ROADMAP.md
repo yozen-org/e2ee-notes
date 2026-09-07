@@ -9,10 +9,10 @@
 
 ## M1 — local encrypted notes
 
-- Freeze canonical operation and encrypted-object protocol version 1.
-- Publish deterministic cross-language test vectors.
-- Implement authenticated operation encryption in `e2ee_core`.
-- Implement immutable filesystem storage and the minimal editor UI.
+- [x] Freeze canonical operation and encrypted-object protocol version 1.
+- [x] Publish deterministic cross-language test vectors.
+- [x] Implement authenticated operation encryption in `e2ee_core`.
+- [x] Implement immutable filesystem storage and the minimal editor UI.
 
 ## M2 — hardware-backed vault key
 

@@ -14,6 +14,7 @@ This repository starts cleanly from lessons learned in `lab-keybridge` and
 ```text
 app/                         Flutter application for five platforms
 packages/e2ee_core/          platform-neutral encrypted data model
+packages/notes_repository/   encrypted operation log and note projection
 packages/storage_api/        minimal blob-store contract
 packages/storage_filesystem/ first local storage adapter
 packages/hardware_keys/      federated native hardware-key plugin
@@ -30,3 +31,8 @@ flutter analyze
 flutter test
 flutter run -d macos
 ```
+
+The current M1 build stores encrypted immutable operations in the platform's
+application-support directory. Its local vault key is temporarily stored as a
+software key beside (but outside) the storage-provider root; hardware wrapping
+replaces this in M2.
