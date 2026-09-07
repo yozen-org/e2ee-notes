@@ -108,7 +108,9 @@ class _NotesHomePageState extends State<NotesHomePage> {
           preferredSize: Size.fromHeight(28),
           child: Padding(
             padding: EdgeInsets.only(bottom: 8),
-            child: Text('Local encrypted vault · hardware protection pending'),
+            child: Text(
+              'Local encrypted vault · hardware-backed when available',
+            ),
           ),
         ),
       ),

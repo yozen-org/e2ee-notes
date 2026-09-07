@@ -32,7 +32,7 @@ flutter test
 flutter run -d macos
 ```
 
-The current M1 build stores encrypted immutable operations in the platform's
-application-support directory. Its local vault key is temporarily stored as a
-software key beside (but outside) the storage-provider root; hardware wrapping
-replaces this in M2.
+The app stores encrypted immutable operations in the platform's
+application-support directory. On Secure Enclave-capable Apple devices, its
+vault key is wrapped for a non-exportable P-256 recipient key. Other platforms
+temporarily use a software key until their hardware adapter is implemented.

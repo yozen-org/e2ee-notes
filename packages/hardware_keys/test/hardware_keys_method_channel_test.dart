@@ -4,14 +4,41 @@ import 'package:hardware_keys/hardware_keys_method_channel.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  MethodChannelHardwareKeys platform = MethodChannelHardwareKeys();
-  const MethodChannel channel = MethodChannel('hardware_keys');
+  final platform = MethodChannelHardwareKeys();
+  const channel = MethodChannel('hardware_keys');
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-          return '42';
+        .setMockMethodCallHandler(channel, (call) async {
+          switch (call.method) {
+            case 'capabilities':
+              return {
+                'available': true,
+                'hardwareBacked': true,
+                'provider': 'test',
+              };
+            case 'createRecipientKey':
+              return {
+                'keyHandle': Uint8List.fromList([1, 2]),
+                'publicKey': {
+                  'version': 1,
+                  'suite': 'suite',
+                  'keyID': 'id',
+                  'publicKey': 'public',
+                },
+              };
+            case 'wrapVaultKey':
+              return {
+                'version': 1,
+                'suite': 'suite',
+                'recipientKeyID': 'id',
+                'ephemeralPublicKey': 'ephemeral',
+                'sealedKey': 'sealed',
+              };
+            case 'unwrapVaultKey':
+              return Uint8List(32);
+          }
+          return null;
         });
   });
 
@@ -20,7 +47,23 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
 
-  test('getPlatformVersion', () async {
-    expect(await platform.getPlatformVersion(), '42');
+  test('method channel preserves typed documents and binary values', () async {
+    final capabilities = await platform.capabilities();
+    final recipient = await platform.createRecipientKey(
+      requireUserPresence: false,
+    );
+    final envelope = await platform.wrapVaultKey(
+      vaultKey: Uint8List(32),
+      recipient: recipient.publicKey,
+    );
+    final unwrapped = await platform.unwrapVaultKey(
+      keyHandle: recipient.handle,
+      envelope: envelope,
+    );
+
+    expect(capabilities.provider, 'test');
+    expect(recipient.handle, [1, 2]);
+    expect(envelope.sealedKey, 'sealed');
+    expect(unwrapped, hasLength(32));
   });
 }

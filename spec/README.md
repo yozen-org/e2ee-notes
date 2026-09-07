@@ -10,3 +10,4 @@ operations, and immutable storage object names.
 Implemented specifications:
 
 - [Operation protocol version 1](OPERATION_V1.md)
+- [Vault-key envelope protocol version 1](KEY_ENVELOPE_V1.md)

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yozen.org/e2ee-notes/recipient-public-key-v1.schema.json",
+  "title": "E2EE Notes recipient public key v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "suite", "keyID", "publicKey"],
+  "properties": {
+    "version": { "const": 1 },
+    "suite": { "const": "P256-HKDF-SHA256-AES256GCM" },
+    "keyID": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "publicKey": { "type": "string", "contentEncoding": "base64" }
+  }
+}

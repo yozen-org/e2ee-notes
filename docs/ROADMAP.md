@@ -16,9 +16,11 @@
 
 ## M2 — hardware-backed vault key
 
-- Import Keybridge formats through specification.
-- Implement macOS Secure Enclave and Linux TPM adapters.
-- Store one wrapped vault-key envelope per authorized device.
+- [x] Import the Keybridge design into a product-namespaced specification.
+- [ ] Implement macOS Secure Enclave and Linux TPM adapters.
+  - [x] Apple Secure Enclave plugin implementation for macOS and iOS.
+  - [ ] Linux TPM plugin implementation and physical-device verification.
+- [x] Store a wrapped vault-key envelope for the local Apple device.
 - Demonstrate one shared encrypted vault on macOS and Linux.
 
 ## M3 — mobile and Windows
