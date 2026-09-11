@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:storage_filesystem/storage_filesystem.dart';
 
-import 'local_material.dart';
+import 'read_or_create_random_bytes.dart';
 import 'vault_key_provider/vault_key_provider.dart';
 
 final class LocalVault {
@@ -22,7 +22,7 @@ final class LocalVault {
     await root.create(recursive: true);
     final vaultKey = await keyProvider.openKey(root);
 
-    final deviceIdBytes = await readOrCreateLocalBytes(
+    final deviceIdBytes = await readOrCreateRandomBytes(
       File(p.join(root.path, 'device-id.bin')),
       32,
     );
