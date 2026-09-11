@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'hardware_keys_platform_interface.dart';
 
-// 利用可否とハードウェア保護の有無を、OS側から受け取る。
 final class HardwareKeyCapabilities {
   const HardwareKeyCapabilities({
     required this.available,
@@ -22,7 +21,6 @@ final class HardwareKeyCapabilities {
   final String provider;
 }
 
-// 鍵をラップする相手の公開情報。秘密鍵は含まない。
 final class RecipientPublicKey {
   const RecipientPublicKey({
     required this.version,
@@ -52,14 +50,12 @@ final class RecipientPublicKey {
   };
 }
 
-// 公開情報と端末専用ハンドルの組。ハンドルは他端末への復旧用鍵ではない。
 final class RecipientKey {
   const RecipientKey({required this.handle, required this.publicKey});
   final Uint8List handle;
   final RecipientPublicKey publicKey;
 }
 
-// 保管庫の鍵を受信者向けに暗号化した形式。フィールドは鍵エンベロープv1仕様に対応する。
 final class VaultKeyEnvelope {
   const VaultKeyEnvelope({
     required this.version,
@@ -93,7 +89,6 @@ final class VaultKeyEnvelope {
   };
 }
 
-// アプリから使う窓口。実際の鍵操作はプラットフォーム実装へ委譲する。
 class HardwareKeys {
   Future<HardwareKeyCapabilities> capabilities() =>
       HardwareKeysPlatform.instance.capabilities();

@@ -1,10 +1,7 @@
-// Windowsプラグインの雛形。現在はOSバージョン取得のみで、TPMによる鍵操作は未実装。
 #include "hardware_keys_plugin.h"
 
-// This must be included before many other Windows headers.
 #include <windows.h>
 
-// For getPlatformVersion; remove unless needed for your plugin implementation.
 #include <VersionHelpers.h>
 
 #include <flutter/method_channel.h>
@@ -16,7 +13,6 @@
 
 namespace hardware_keys {
 
-// static
 void HardwareKeysPlugin::RegisterWithRegistrar(
     flutter::PluginRegistrarWindows *registrar) {
   auto channel =
@@ -57,4 +53,4 @@ void HardwareKeysPlugin::HandleMethodCall(
   }
 }
 
-}  // namespace hardware_keys
+}

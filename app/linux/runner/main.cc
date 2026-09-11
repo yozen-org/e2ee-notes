@@ -1,4 +1,3 @@
-// Linux実行ファイルの入口。GTKアプリケーションを生成して実行する。
 #include "my_application.h"
 
 int main(int argc, char** argv) {

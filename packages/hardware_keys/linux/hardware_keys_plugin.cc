@@ -1,4 +1,3 @@
-// Linuxプラグインの雛形。現在はOSバージョン取得のみで、TPMによる鍵操作は未実装。
 #include "include/hardware_keys/hardware_keys_plugin.h"
 
 #include <flutter_linux/flutter_linux.h>
@@ -19,7 +18,6 @@ struct _HardwareKeysPlugin {
 
 G_DEFINE_TYPE(HardwareKeysPlugin, hardware_keys_plugin, g_object_get_type())
 
-// Called when a method call is received from Flutter.
 static void hardware_keys_plugin_handle_method_call(
     HardwareKeysPlugin* self,
     FlMethodCall* method_call) {

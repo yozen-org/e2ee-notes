@@ -1,4 +1,3 @@
-// Androidプラグインの雛形。現在はOSバージョン取得のみで、Keystoreによる鍵操作は未実装。
 package org.yozen.hardware_keys
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -7,14 +6,10 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
-/** HardwareKeysPlugin */
 class HardwareKeysPlugin :
     FlutterPlugin,
     MethodCallHandler {
-    // The MethodChannel that will the communication between Flutter and native Android
-    //
-    // This local reference serves to register the plugin with the Flutter Engine and unregister it
-    // when the Flutter Engine is detached from the Activity
+
     private lateinit var channel: MethodChannel
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {

@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:e2ee_core/e2ee_core.dart';
 import 'package:storage_api/storage_api.dart';
 
-// 操作履歴から復元した、画面表示用のメモ。
 final class NoteRecord {
   const NoteRecord({
     required this.id,
@@ -20,7 +19,6 @@ final class NoteRecord {
   final DateTime modifiedAt;
 }
 
-// 保存先を抽象化し、メモ操作の暗号化と履歴からの状態復元を担当する。
 final class EncryptedNotesRepository {
   EncryptedNotesRepository({
     required BlobStore store,
@@ -29,8 +27,7 @@ final class EncryptedNotesRepository {
     OperationCipher? cipher,
     DateTime Function()? clock,
     Random? random,
-  }) : // 公開引数で保存先を受け取り、内部では非公開フィールドとして保持する。
-       // ignore: prefer_initializing_formals
+  }) : // ignore: prefer_initializing_formals
        _store = store,
        _vaultKey = Uint8List.fromList(vaultKey),
        _deviceId = deviceId,
@@ -57,7 +54,6 @@ final class EncryptedNotesRepository {
   final Random _random;
   int _nextSequence = 1;
 
-  // 履歴を順番に適用し、削除済みメモを除いた現在の一覧を返す。
   Future<List<NoteRecord>> loadNotes() async {
     final operations = await _loadOperations();
     final notes = <String, NoteRecord>{};
@@ -87,7 +83,6 @@ final class EncryptedNotesRepository {
     return result;
   }
 
-  // メモ全体を含む作成・更新操作を追加する。既存の操作は上書きしない。
   Future<NoteRecord> save({
     String? noteId,
     required String title,
@@ -119,7 +114,6 @@ final class EncryptedNotesRepository {
     );
   }
 
-  // 論理削除の操作を追加する。過去の暗号化オブジェクトは残る。
   Future<void> delete(String noteId) async {
     await loadNotes();
     _requireIdentifier(noteId, 'noteId');
@@ -154,7 +148,7 @@ final class EncryptedNotesRepository {
         ),
       );
     }
-    // 現在は時刻、同時刻なら操作IDで順序を固定する。差分マージは行わない。
+
     operations.sort((left, right) {
       final timestamp = left.timestampMicros.compareTo(right.timestampMicros);
       return timestamp != 0
@@ -164,7 +158,6 @@ final class EncryptedNotesRepository {
     return operations;
   }
 
-  // 操作IDを保存キーにも使い、暗号化オブジェクトを追記する。
   Future<void> _write(NoteOperation operation) async {
     final encrypted = await _cipher.encrypt(
       operation: operation,

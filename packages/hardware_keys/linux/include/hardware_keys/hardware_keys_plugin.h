@@ -23,4 +23,4 @@ FLUTTER_PLUGIN_EXPORT void hardware_keys_plugin_register_with_registrar(
 
 G_END_DECLS
 
-#endif  // FLUTTER_PLUGIN_HARDWARE_KEYS_PLUGIN_H_
+#endif

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
-// 固定長の端末内データを読み込み、初回だけ安全な乱数で作成する。
 Future<Uint8List> readOrCreateLocalBytes(File file, int length) async {
   if (await file.exists()) {
     final bytes = await file.readAsBytes();

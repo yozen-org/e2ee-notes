@@ -1,4 +1,3 @@
-// macOSアプリの終了条件と状態復元への対応を設定する。
 import Cocoa
 import FlutterMacOS
 

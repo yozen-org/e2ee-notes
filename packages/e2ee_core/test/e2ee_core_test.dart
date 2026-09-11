@@ -1,4 +1,3 @@
-// 固定ベクターとの一致、暗号文の改ざん検出、保存キーの変更拒否を確認する。
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';

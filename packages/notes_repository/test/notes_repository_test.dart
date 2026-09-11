@@ -1,4 +1,3 @@
-// 暗号化した履歴からの復元、論理削除、改ざん時の失敗を確認する。
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';

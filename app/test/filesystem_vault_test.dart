@@ -1,4 +1,3 @@
-// 一時保存先で再起動後の復元を検証し、モックの鍵実装で保護形式への移行を確認する。
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -136,7 +135,6 @@ void main() {
     expect((await reopened.loadNotes()).single.title, 'Migrated');
   });
 
-  // 利用不可とハードウェア保護なしのどちらも、既存のソフトウェア鍵を引き継ぐ。
   for (final capabilities in [(false, true), (true, false)]) {
     test('Apple fallback preserves the key for $capabilities', () async {
       final directory = await Directory.systemTemp.createTemp('e2ee-fallback-');
@@ -163,7 +161,6 @@ void main() {
     });
   }
 
-  // 不完全な保護状態を新しい鍵で置き換えないことを確認する。
   test('rejects incomplete hardware state without replacing the key', () async {
     final directory = await Directory.systemTemp.createTemp('e2ee-incomplete-');
     addTearDown(() => directory.delete(recursive: true));

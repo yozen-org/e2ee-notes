@@ -5,7 +5,6 @@ import 'package:cryptography/cryptography.dart';
 
 enum NoteOperationKind { create, update, delete }
 
-// 暗号化する前のメモ操作。JSONのフィールド名と順序はspec/OPERATION_V1.mdに従う。
 final class NoteOperation {
   const NoteOperation({
     required this.operationId,
@@ -60,12 +59,10 @@ final class NoteOperation {
     );
   }
 
-  // テストベクターを再現できるように、一定の順序・空白なしのUTF-8 JSONを生成する。
   Uint8List encodeCanonical() =>
       Uint8List.fromList(utf8.encode(jsonEncode(toJson())));
 }
 
-// 保存用の外側の形式。バイト列はJSON出力時にbase64へ変換する。
 final class EncryptedOperation {
   const EncryptedOperation({
     required this.objectId,
@@ -79,7 +76,6 @@ final class EncryptedOperation {
   final String objectId;
   final Uint8List nonce;
 
-  /// AES-GCMの暗号文に16バイトの認証タグを連結したもの。
   final Uint8List ciphertext;
 
   Map<String, Object> toJson() => {
@@ -102,7 +98,6 @@ final class EncryptedOperation {
   }
 }
 
-// AES-256-GCMで操作を暗号化し、復号時には改ざんとIDの不一致を検証する。
 final class OperationCipher {
   OperationCipher({AesGcm? algorithm})
     : _algorithm = algorithm ?? AesGcm.with256bits();
@@ -118,7 +113,7 @@ final class OperationCipher {
     Uint8List? nonce,
   }) async {
     _validate(vaultKey, objectId);
-    // 通常は毎回新しいnonceを生成する。指定可能なのは固定テストベクターの再現のため。
+
     final actualNonce = nonce ?? Uint8List.fromList(_algorithm.newNonce());
     if (actualNonce.length != 12) {
       throw ArgumentError.value(
@@ -152,7 +147,7 @@ final class OperationCipher {
     if (encrypted.nonce.length != 12 || encrypted.ciphertext.length < 16) {
       throw const FormatException('invalid AES-GCM object lengths');
     }
-    // 末尾16バイトの認証タグを分離し、認証に成功した平文だけを読み取る。
+
     final tagOffset = encrypted.ciphertext.length - 16;
     final plaintext = await _algorithm.decrypt(
       SecretBox(
@@ -174,7 +169,6 @@ final class OperationCipher {
     return operation;
   }
 
-  // 保存オブジェクトIDも認証対象にして、別の保存キーへの暗号文の移し替えを検出する。
   List<int> _aad(String objectId) => utf8.encode('$_aadPrefix$objectId');
 
   void _validate(Uint8List vaultKey, String objectId) {

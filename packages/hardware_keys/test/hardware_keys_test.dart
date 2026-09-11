@@ -1,4 +1,3 @@
-// 代替実装を注入して、公開APIから各鍵操作へ正しく委譲されることを確認する。
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';

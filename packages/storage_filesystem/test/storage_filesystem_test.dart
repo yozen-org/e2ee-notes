@@ -1,4 +1,3 @@
-// 同一内容の再保存と競合、親ディレクトリへの移動の拒否を確認する。
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -29,8 +28,8 @@ void main() {
     () async {
       final directory = await Directory.systemTemp.createTemp('e2ee-paths-');
       addTearDown(() => directory.delete(recursive: true));
-    // 結合APIが除去する末尾の区切りを、回帰テストの入力として意図的に付ける。
-    final store = FilesystemBlobStore(
+
+      final store = FilesystemBlobStore(
         Directory('${directory.path}${p.separator}'),
       );
       final content = Uint8List.fromList([1, 2, 3]);

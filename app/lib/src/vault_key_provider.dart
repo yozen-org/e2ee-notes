@@ -7,12 +7,10 @@ import 'package:path/path.dart' as p;
 
 import 'local_material.dart';
 
-// 保管庫の鍵の取得方法を切り替える契約。呼び出し側が保存ルートを用意する。
 abstract interface class VaultKeyProvider {
   Future<Uint8List> openKey(Directory root);
 }
 
-// ハードウェア保護が使えない環境向けの、暫定的な平文鍵ファイル保存。
 final class SoftwareVaultKeyProvider implements VaultKeyProvider {
   const SoftwareVaultKeyProvider();
 
@@ -21,8 +19,6 @@ final class SoftwareVaultKeyProvider implements VaultKeyProvider {
       readOrCreateLocalBytes(File(p.join(root.path, 'vault-key.bin')), 32);
 }
 
-// Apple端末の機能判定と、端末鍵による保護・復元・平文鍵からの移行を担当する。
-// 非対応時のみソフトウェア鍵を使い、鍵操作の失敗はそのまま通知する。
 final class AppleVaultKeyProvider implements VaultKeyProvider {
   AppleVaultKeyProvider(this.hardwareKeys);
 
@@ -40,14 +36,12 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
     final envelopeFile = File(p.join(root.path, 'vault-key.envelope.json'));
     final publicFile = File(p.join(root.path, 'recipient-public.json'));
 
-    // ハンドルとエンベロープの片方だけが残った状態では、新しい鍵で上書きせず失敗させる。
     final hasHandle = await handleFile.exists();
     final hasEnvelope = await envelopeFile.exists();
     if (hasHandle != hasEnvelope) {
       throw const FormatException('incomplete hardware vault-key state');
     }
 
-    // 既存の端末鍵で保管庫の鍵を復元する。移行途中の平文鍵は一致を確認してから削除する。
     if (hasHandle) {
       final vaultKey = await hardwareKeys.unwrapVaultKey(
         keyHandle: await handleFile.readAsBytes(),
@@ -67,7 +61,6 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
       return vaultKey;
     }
 
-    // 初回は鍵をラップし、復元できることを確認してから保護済みの情報を保存する。
     final vaultKey = await const SoftwareVaultKeyProvider().openKey(root);
     final recipient = await hardwareKeys.createRecipientKey();
     final envelope = await hardwareKeys.wrapVaultKey(
@@ -82,7 +75,6 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
       throw const FormatException('hardware vault-key verification failed');
     }
 
-    // 端末専用ハンドルと保護された鍵を保存した後、一時的な平文鍵ファイルを削除する。
     await handleFile.writeAsBytes(recipient.handle, flush: true);
     await envelopeFile.writeAsString(jsonEncode(envelope.toMap()), flush: true);
     await publicFile.writeAsString(

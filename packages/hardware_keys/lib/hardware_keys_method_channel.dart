@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'hardware_keys.dart';
 import 'hardware_keys_platform_interface.dart';
 
-// Dartとネイティブの間で、hardware_keysチャネルを通して引数と結果を変換する。
 class MethodChannelHardwareKeys extends HardwareKeysPlatform {
   @visibleForTesting
   final methodChannel = const MethodChannel('hardware_keys');

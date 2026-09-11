@@ -1,4 +1,3 @@
-// macOSのウィンドウにFlutterの画面を組み込み、プラグインを登録する。
 import Cocoa
 import FlutterMacOS
 
