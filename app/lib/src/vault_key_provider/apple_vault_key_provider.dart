@@ -21,7 +21,10 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
     if (!capabilities.available || !capabilities.hardwareBacked) {
       return const SoftwareVaultKeyProvider().openKey(root);
     }
+    return _openProtectedKey(root);
+  }
 
+  Future<Uint8List> _openProtectedKey(Directory root) async {
     if (await _hasProtectedKey(root)) {
       return _restoreKey(root);
     }
