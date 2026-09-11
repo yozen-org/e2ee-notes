@@ -12,8 +12,13 @@ import 'package:path/path.dart' as p;
 import 'package:storage_filesystem/storage_filesystem.dart';
 
 final class FakeHardwareKeys extends HardwareKeys {
-  FakeHardwareKeys({this.available = true, this.hardwareBacked = true});
+  FakeHardwareKeys({
+    this.available = true,
+    this.hardwareBacked = true,
+    this.corruptUnwrappedKey = false,
+  });
 
+  final bool corruptUnwrappedKey;
   final bool available;
   final bool hardwareBacked;
 
@@ -54,7 +59,11 @@ final class FakeHardwareKeys extends HardwareKeys {
   Future<Uint8List> unwrapVaultKey({
     required Uint8List keyHandle,
     required VaultKeyEnvelope envelope,
-  }) async => base64Decode(envelope.sealedKey);
+  }) async {
+    final key = base64Decode(envelope.sealedKey);
+    if (corruptUnwrappedKey) key[0] ^= 1;
+    return key;
+  }
 }
 
 void main() {
@@ -181,4 +190,51 @@ void main() {
       isFalse,
     );
   });
+
+  test('failed wrap verification preserves the software key', () async {
+    final directory = await Directory.systemTemp.createTemp('e2ee-verify-');
+    addTearDown(() => directory.delete(recursive: true));
+    final key = await const SoftwareVaultKeyProvider().openKey(directory);
+    final provider = AppleVaultKeyProvider(
+      FakeHardwareKeys(corruptUnwrappedKey: true),
+    );
+    await expectLater(provider.openKey(directory), throwsFormatException);
+    expect(
+      await File(p.join(directory.path, 'vault-key.bin')).readAsBytes(),
+      key,
+    );
+    expect(
+      await File(p.join(directory.path, 'recipient-key.handle')).exists(),
+      isFalse,
+    );
+    expect(
+      await File(p.join(directory.path, 'vault-key.envelope.json')).exists(),
+      isFalse,
+    );
+  });
+
+  for (final matching in [true, false]) {
+    test(
+      'reopening removes a leftover software key only when matching: $matching',
+      () async {
+        final directory = await Directory.systemTemp.createTemp(
+          'e2ee-leftover-',
+        );
+        addTearDown(() => directory.delete(recursive: true));
+        final provider = AppleVaultKeyProvider(FakeHardwareKeys());
+        final key = await provider.openKey(directory);
+        final leftover = Uint8List.fromList(key);
+        if (!matching) leftover[0] ^= 1;
+        final softwareFile = File(p.join(directory.path, 'vault-key.bin'));
+        await softwareFile.writeAsBytes(leftover);
+        if (matching) {
+          expect(await provider.openKey(directory), key);
+          expect(await softwareFile.exists(), isFalse);
+        } else {
+          await expectLater(provider.openKey(directory), throwsFormatException);
+          expect(await softwareFile.readAsBytes(), leftover);
+        }
+      },
+    );
+  }
 }

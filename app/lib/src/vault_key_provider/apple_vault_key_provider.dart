@@ -20,38 +20,64 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
       return const SoftwareVaultKeyProvider().openKey(root);
     }
 
-    final softwareKey = File(p.join(root.path, 'vault-key.bin'));
-    final handleFile = File(p.join(root.path, 'recipient-key.handle'));
-    final envelopeFile = File(p.join(root.path, 'vault-key.envelope.json'));
-    final publicFile = File(p.join(root.path, 'recipient-public.json'));
+    if (await _hasProtectedKey(root)) {
+      return _restoreKey(root);
+    }
+    return _createProtectedKey(root);
+  }
 
-    final hasHandle = await handleFile.exists();
-    final hasEnvelope = await envelopeFile.exists();
+  Future<bool> _hasProtectedKey(Directory root) async {
+    final hasHandle = await File(p.join(root.path, 'recipient-key.handle'))
+        .exists();
+    final hasEnvelope = await File(p.join(root.path, 'vault-key.envelope.json'))
+        .exists();
     if (hasHandle != hasEnvelope) {
       throw const FormatException('incomplete hardware vault-key state');
     }
+    return hasHandle;
+  }
 
-    if (hasHandle) {
-      final vaultKey = await hardwareKeys.unwrapVaultKey(
-        keyHandle: await handleFile.readAsBytes(),
-        envelope: VaultKeyEnvelope.fromMap(
-          _decodeMap(await envelopeFile.readAsString()),
+  Future<Uint8List> _restoreKey(Directory root) async {
+    final vaultKey = await hardwareKeys.unwrapVaultKey(
+      keyHandle: await File(p.join(root.path, 'recipient-key.handle'))
+          .readAsBytes(),
+      envelope: VaultKeyEnvelope.fromMap(
+        _decodeMap(
+          await File(p.join(root.path, 'vault-key.envelope.json'))
+              .readAsString(),
         ),
-      );
-      if (await softwareKey.exists()) {
-        final legacy = await softwareKey.readAsBytes();
-        if (!_sameBytes(vaultKey, legacy)) {
-          throw const FormatException(
-            'hardware and software vault keys differ',
-          );
-        }
-        await softwareKey.delete();
-      }
-      return vaultKey;
-    }
+      ),
+    );
+    await _removeMatchingSoftwareKey(root, vaultKey);
+    return vaultKey;
+  }
 
+  Future<void> _removeMatchingSoftwareKey(
+    Directory root,
+    Uint8List vaultKey,
+  ) async {
+    final softwareKey = File(p.join(root.path, 'vault-key.bin'));
+    if (!await softwareKey.exists()) return;
+    final legacy = await softwareKey.readAsBytes();
+    if (!_sameBytes(vaultKey, legacy)) {
+      throw const FormatException('hardware and software vault keys differ');
+    }
+    await softwareKey.delete();
+  }
+
+  Future<Uint8List> _createProtectedKey(Directory root) async {
     final vaultKey = await const SoftwareVaultKeyProvider().openKey(root);
     final recipient = await hardwareKeys.createRecipientKey();
+    final envelope = await _wrapAndVerifyKey(vaultKey, recipient);
+    await _persistProtectedKey(root, recipient, envelope);
+    await File(p.join(root.path, 'vault-key.bin')).delete();
+    return vaultKey;
+  }
+
+  Future<VaultKeyEnvelope> _wrapAndVerifyKey(
+    Uint8List vaultKey,
+    RecipientKey recipient,
+  ) async {
     final envelope = await hardwareKeys.wrapVaultKey(
       vaultKey: vaultKey,
       recipient: recipient.publicKey,
@@ -63,15 +89,20 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
     if (!_sameBytes(vaultKey, verified)) {
       throw const FormatException('hardware vault-key verification failed');
     }
+    return envelope;
+  }
 
-    await handleFile.writeAsBytes(recipient.handle, flush: true);
-    await envelopeFile.writeAsString(jsonEncode(envelope.toMap()), flush: true);
-    await publicFile.writeAsString(
-      jsonEncode(recipient.publicKey.toMap()),
-      flush: true,
-    );
-    await softwareKey.delete();
-    return vaultKey;
+  Future<void> _persistProtectedKey(
+    Directory root,
+    RecipientKey recipient,
+    VaultKeyEnvelope envelope,
+  ) async {
+    await File(p.join(root.path, 'recipient-key.handle'))
+        .writeAsBytes(recipient.handle, flush: true);
+    await File(p.join(root.path, 'vault-key.envelope.json'))
+        .writeAsString(jsonEncode(envelope.toMap()), flush: true);
+    await File(p.join(root.path, 'recipient-public.json'))
+        .writeAsString(jsonEncode(recipient.publicKey.toMap()), flush: true);
   }
 
   static Map<Object?, Object?> _decodeMap(String source) {
