@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:hardware_keys/hardware_keys.dart';
 import 'package:path/path.dart' as p;
 
+import '../vault_key_files/recipient_key_handle_file.dart';
+import '../vault_key_files/vault_key_envelope_file.dart';
 import 'software_vault_key_provider.dart';
 import 'vault_key_provider.dart';
 
@@ -27,10 +29,8 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
   }
 
   Future<bool> _hasProtectedKey(Directory root) async {
-    final hasHandle = await File(p.join(root.path, 'recipient-key.handle'))
-        .exists();
-    final hasEnvelope = await File(p.join(root.path, 'vault-key.envelope.json'))
-        .exists();
+    final hasHandle = await RecipientKeyHandleFile(root).exists();
+    final hasEnvelope = await VaultKeyEnvelopeFile(root).exists();
     if (hasHandle != hasEnvelope) {
       throw const FormatException('incomplete hardware vault-key state');
     }
@@ -39,14 +39,8 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
 
   Future<Uint8List> _restoreKey(Directory root) async {
     final vaultKey = await hardwareKeys.unwrapVaultKey(
-      keyHandle: await File(p.join(root.path, 'recipient-key.handle'))
-          .readAsBytes(),
-      envelope: VaultKeyEnvelope.fromMap(
-        _decodeMap(
-          await File(p.join(root.path, 'vault-key.envelope.json'))
-              .readAsString(),
-        ),
-      ),
+      keyHandle: await RecipientKeyHandleFile(root).read(),
+      envelope: await VaultKeyEnvelopeFile(root).read(),
     );
     await _removeMatchingSoftwareKey(root, vaultKey);
     return vaultKey;
@@ -97,20 +91,10 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
     RecipientKey recipient,
     VaultKeyEnvelope envelope,
   ) async {
-    await File(p.join(root.path, 'recipient-key.handle'))
-        .writeAsBytes(recipient.handle, flush: true);
-    await File(p.join(root.path, 'vault-key.envelope.json'))
-        .writeAsString(jsonEncode(envelope.toMap()), flush: true);
+    await RecipientKeyHandleFile(root).write(recipient.handle);
+    await VaultKeyEnvelopeFile(root).write(envelope);
     await File(p.join(root.path, 'recipient-public.json'))
         .writeAsString(jsonEncode(recipient.publicKey.toMap()), flush: true);
-  }
-
-  static Map<Object?, Object?> _decodeMap(String source) {
-    final value = jsonDecode(source);
-    if (value is! Map<String, Object?>) {
-      throw const FormatException('expected a JSON object');
-    }
-    return value;
   }
 
   static bool _sameBytes(List<int> left, List<int> right) {
