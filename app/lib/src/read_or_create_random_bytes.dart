@@ -1,6 +1,7 @@
 import 'dart:io';
-import 'dart:math';
 import 'dart:typed_data';
+
+import 'generate_random_bytes.dart';
 
 Future<Uint8List> readOrCreateRandomBytes(File file, int length) async {
   if (await file.exists()) {
@@ -23,10 +24,7 @@ Future<Uint8List> _readBytesWithExpectedLength(
 }
 
 Future<Uint8List> _createRandomBytesFile(File file, int length) async {
-  final random = Random.secure();
-  final bytes = Uint8List.fromList(
-    List<int>.generate(length, (_) => random.nextInt(256)),
-  );
+  final bytes = generateRandomBytes(length);
   await file.writeAsBytes(bytes, flush: true);
   return bytes;
 }

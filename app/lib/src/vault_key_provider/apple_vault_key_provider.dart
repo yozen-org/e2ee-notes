@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:hardware_keys/hardware_keys.dart';
 import 'package:path/path.dart' as p;
 
+import '../generate_random_bytes.dart';
 import '../vault_key_files/recipient_key_handle_file.dart';
 import '../vault_key_files/vault_key_envelope_file.dart';
 import 'software_vault_key_provider.dart';
@@ -27,6 +28,10 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
   Future<Uint8List> _openProtectedKey(Directory root) async {
     if (await _hasProtectedKey(root)) {
       return _restoreKey(root);
+    }
+    final softwareKey = File(p.join(root.path, 'vault-key.bin'));
+    if (await softwareKey.exists()) {
+      return _migrateSoftwareKey(root, softwareKey);
     }
     return _createProtectedKey(root);
   }
@@ -63,12 +68,28 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
   }
 
   Future<Uint8List> _createProtectedKey(Directory root) async {
-    final vaultKey = await const SoftwareVaultKeyProvider().openKey(root);
+    final vaultKey = generateRandomBytes(32);
+    await _protectKey(root, vaultKey);
+    return vaultKey;
+  }
+
+  Future<Uint8List> _migrateSoftwareKey(
+    Directory root,
+    File softwareKey,
+  ) async {
+    final vaultKey = await softwareKey.readAsBytes();
+    if (vaultKey.length != 32) {
+      throw const FormatException('invalid software vault-key length');
+    }
+    await _protectKey(root, vaultKey);
+    await _removeMatchingSoftwareKey(root, vaultKey);
+    return vaultKey;
+  }
+
+  Future<void> _protectKey(Directory root, Uint8List vaultKey) async {
     final recipient = await hardwareKeys.createRecipientKey();
     final envelope = await _wrapAndVerifyKey(vaultKey, recipient);
     await _persistProtectedKey(root, recipient, envelope);
-    await File(p.join(root.path, 'vault-key.bin')).delete();
-    return vaultKey;
   }
 
   Future<VaultKeyEnvelope> _wrapAndVerifyKey(

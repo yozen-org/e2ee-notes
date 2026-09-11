@@ -16,11 +16,13 @@ final class FakeHardwareKeys extends HardwareKeys {
     this.available = true,
     this.hardwareBacked = true,
     this.corruptUnwrappedKey = false,
+    this.beforeWrap,
   });
 
   final bool corruptUnwrappedKey;
   final bool available;
   final bool hardwareBacked;
+  final Future<void> Function()? beforeWrap;
 
   @override
   Future<HardwareKeyCapabilities> capabilities() async =>
@@ -47,13 +49,16 @@ final class FakeHardwareKeys extends HardwareKeys {
   Future<VaultKeyEnvelope> wrapVaultKey({
     required Uint8List vaultKey,
     required RecipientPublicKey recipient,
-  }) async => VaultKeyEnvelope(
-    version: 1,
-    suite: recipient.suite,
-    recipientKeyId: recipient.keyId,
-    ephemeralPublicKey: 'test-ephemeral',
-    sealedKey: base64Encode(vaultKey),
-  );
+  }) async {
+    await beforeWrap?.call();
+    return VaultKeyEnvelope(
+      version: 1,
+      suite: recipient.suite,
+      recipientKeyId: recipient.keyId,
+      ephemeralPublicKey: 'test-ephemeral',
+      sealedKey: base64Encode(vaultKey),
+    );
+  }
 
   @override
   Future<Uint8List> unwrapVaultKey({
@@ -67,6 +72,50 @@ final class FakeHardwareKeys extends HardwareKeys {
 }
 
 void main() {
+  for (final failVerification in [false, true]) {
+    test(
+      'new hardware key stays off plaintext disk, failure: $failVerification',
+      () async {
+        final directory = await Directory.systemTemp.createTemp(
+          'e2ee-new-key-',
+        );
+        addTearDown(() => directory.delete(recursive: true));
+        final plaintextKey = File(p.join(directory.path, 'vault-key.bin'));
+        final provider = AppleVaultKeyProvider(
+          FakeHardwareKeys(
+            corruptUnwrappedKey: failVerification,
+            beforeWrap: () async =>
+                expect(await plaintextKey.exists(), isFalse),
+          ),
+        );
+        if (failVerification) {
+          await expectLater(provider.openKey(directory), throwsFormatException);
+        } else {
+          final key = await provider.openKey(directory);
+          expect(key, hasLength(32));
+          expect(await provider.openKey(directory), key);
+        }
+        expect(await plaintextKey.exists(), isFalse);
+      },
+    );
+  }
+
+  test('rejects an invalid software key without replacing it', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'e2ee-invalid-key-',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final plaintextKey = File(p.join(directory.path, 'vault-key.bin'));
+    await plaintextKey.writeAsBytes([1, 2, 3]);
+    final provider = AppleVaultKeyProvider(FakeHardwareKeys());
+    await expectLater(provider.openKey(directory), throwsFormatException);
+    expect(await plaintextKey.readAsBytes(), [1, 2, 3]);
+    expect(
+      await File(p.join(directory.path, 'recipient-key.handle')).exists(),
+      isFalse,
+    );
+  });
+
   test('encrypted note survives reopening a filesystem store', () async {
     final directory = await Directory.systemTemp.createTemp(
       'e2ee-notes-vault-',
