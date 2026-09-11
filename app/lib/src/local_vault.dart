@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:storage_filesystem/storage_filesystem.dart';
 
 import 'local_material.dart';
-import 'vault_key_provider.dart';
+import 'vault_key_provider/vault_key_provider.dart';
 
 final class LocalVault {
   const LocalVault({required this.keyProvider});

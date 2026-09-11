@@ -5,19 +5,8 @@ import 'dart:typed_data';
 import 'package:hardware_keys/hardware_keys.dart';
 import 'package:path/path.dart' as p;
 
-import 'local_material.dart';
-
-abstract interface class VaultKeyProvider {
-  Future<Uint8List> openKey(Directory root);
-}
-
-final class SoftwareVaultKeyProvider implements VaultKeyProvider {
-  const SoftwareVaultKeyProvider();
-
-  @override
-  Future<Uint8List> openKey(Directory root) =>
-      readOrCreateLocalBytes(File(p.join(root.path, 'vault-key.bin')), 32);
-}
+import 'software_vault_key_provider.dart';
+import 'vault_key_provider.dart';
 
 final class AppleVaultKeyProvider implements VaultKeyProvider {
   AppleVaultKeyProvider(this.hardwareKeys);

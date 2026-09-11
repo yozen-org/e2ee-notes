@@ -3,7 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/src/local_vault.dart';
-import 'package:e2ee_notes/src/vault_key_provider.dart';
+import 'package:e2ee_notes/src/vault_key_provider/apple_vault_key_provider.dart';
+import 'package:e2ee_notes/src/vault_key_provider/software_vault_key_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hardware_keys/hardware_keys.dart';
 import 'package:notes_repository/notes_repository.dart';

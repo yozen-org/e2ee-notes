@@ -62,6 +62,8 @@ Apple向けProviderがハードウェアの機能を判定し、非対応の場�
 `LocalVault`はコンストラクターで`VaultKeyProvider`を受け取り、
 保存先と端末IDを準備してRepositoryを組み立てます。
 
-鍵の保存・移行・復元は`vault_key_provider.dart`にまとめています。
+`app/lib/src/vault_key_provider/`内で、契約を定義する`vault_key_provider.dart`、
+平文鍵を扱う`software_vault_key_provider.dart`、
+Apple端末の鍵の保護・移行・復元を扱う`apple_vault_key_provider.dart`に分けています。
 テストでは同じ`LocalVault`へProviderを直接注入し、ハードウェア側の操作だけを
 代替実装に差し替えます。テスト専用のOS分岐フラグは使用しません。
