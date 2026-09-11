@@ -1,3 +1,4 @@
+// 同一内容の再保存と競合、親ディレクトリへの移動の拒否を確認する。
 import 'dart:io';
 import 'dart:typed_data';
 

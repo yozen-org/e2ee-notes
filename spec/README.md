@@ -1,13 +1,22 @@
-# Protocol specifications
+# プロトコル仕様
 
-This directory is the language-independent source of truth for persisted
-formats. A format is not implemented until it has a versioned schema,
-deterministic test vectors, and passing Dart plus independent reference tests.
+このディレクトリは、保存形式について言語に依存しない正本となる仕様を管理します。
+ある形式の実装が完了したと判断するには、バージョン付きスキーマ、結果を再現できる
+テストベクター、Dartと独立した参照実装の両方で成功するテストが必要です。
 
-The first formats cover vault headers, recipient key envelopes, encrypted
-operations, and immutable storage object names.
+初期の仕様が対象とするのは、保管庫（vault）のヘッダー、受信者向けの鍵エンベロープ、
+暗号化された操作、変更されない保存オブジェクトの名前です。
 
-Implemented specifications:
+実装済みの仕様:
 
-- [Operation protocol version 1](OPERATION_V1.md)
-- [Vault-key envelope protocol version 1](KEY_ENVELOPE_V1.md)
+- [操作プロトコル v1](OPERATION_V1.md)
+- [保管庫の鍵エンベローププロトコル v1](KEY_ENVELOPE_V1.md)
+
+## 読み方
+
+- `schemas/`: 各JSON形式のフィールドと制約を定義するJSON Schema。
+- `test-vectors/`: 言語間で同じ暗号化結果になることを確認する固定の入力と期待値。
+- `../reference/go/`: Goの標準ライブラリによる独立した操作暗号化の検証コード。
+
+フィールド名、アルゴリズム名、暗号処理に使う固定文字列はプロトコルの一部なので、
+日本語には置き換えません。テストベクターの固定鍵とnonceは検証専用です。

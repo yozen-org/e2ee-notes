@@ -1,3 +1,4 @@
+// ネイティブ側を模した応答で、辞書とバイナリ値の受け渡しを確認する。
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hardware_keys/hardware_keys_method_channel.dart';

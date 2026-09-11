@@ -1,3 +1,4 @@
+// 簡易的な保存実装で、任意のバイト列を扱える共通契約を確認する。
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';

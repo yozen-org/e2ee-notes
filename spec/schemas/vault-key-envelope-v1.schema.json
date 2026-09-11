@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yozen.org/e2ee-notes/vault-key-envelope-v1.schema.json",
-  "title": "E2EE Notes vault-key envelope v1",
+  "title": "E2EE Notes 保管庫の鍵エンベロープ v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "suite", "recipientKeyID", "ephemeralPublicKey", "sealedKey"],

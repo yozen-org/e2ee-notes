@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://yozen.org/e2ee-notes/recipient-public-key-v1.schema.json",
-  "title": "E2EE Notes recipient public key v1",
+  "title": "E2EE Notes 受信者公開鍵 v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "suite", "keyID", "publicKey"],

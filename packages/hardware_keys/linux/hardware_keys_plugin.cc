@@ -1,3 +1,4 @@
+// Linuxプラグインの雛形。現在はOSバージョン取得のみで、TPMによる鍵操作は未実装。
 #include "include/hardware_keys/hardware_keys_plugin.h"
 
 #include <flutter_linux/flutter_linux.h>

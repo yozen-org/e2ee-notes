@@ -1,3 +1,4 @@
+// メモ入力から保存後の一覧表示までを、ウィジェット操作で確認する。
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/main.dart';

@@ -1,3 +1,4 @@
+// LinuxのウィンドウとFlutterビューを作成し、プラグインを登録する。
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>

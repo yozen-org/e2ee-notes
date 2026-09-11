@@ -1,20 +1,21 @@
-# Threat model
+# 脅威モデル
 
-Initially protected against:
+初期段階で保護の対象とするもの:
 
-- A storage provider reading note titles or bodies.
-- Disclosure of stored objects without an authorized device key.
-- Modification of an encrypted object without detection.
-- Lock-in to one supported storage adapter.
+- ストレージプロバイダーによるメモのタイトルや本文の読み取り。
+- 認可された端末の鍵を持たない相手への、保存オブジェクトの内容の漏えい。
+- 暗号化オブジェクトの改ざんが検出されないこと。
+- 対応するストレージアダプターのうち、1つだけに依存して移行できなくなること。
 
-Initially out of scope:
+初期段階では対象外とするもの:
 
-- A compromised unlocked client or malicious application build.
-- Deletion, omission, or rollback of the complete object set.
-- Object-size, timing, and access-pattern leakage.
-- Loss of every authorized hardware key before recovery is implemented.
-- Acceptance of an unauthenticated device public key during pairing.
+- ロック解除済みのクライアントが侵害されている場合や、悪意のあるアプリのビルド。
+- オブジェクト集合の削除、一部の欠落、または集合全体の過去の状態への巻き戻し。
+- オブジェクトのサイズ、処理のタイミング、アクセスパターンからの情報漏えい。
+- 復旧機能が実装される前に、認可されたハードウェア鍵をすべて失うこと。
+- ペアリング時に、真正性を確認していない端末の公開鍵を受け入れること。
 
-Normal use initially has no application master passphrase. Local user presence,
-device unlock, and hardware authorization are platform concerns. Passphrase
-hardening and recovery envelopes are deferred extensions.
+初期段階の通常利用では、アプリ全体のマスターパスフレーズは設けません。
+端末上でのユーザーの存在確認、端末のロック解除、ハードウェアによる認可は、
+プラットフォーム側が担います。パスフレーズの総当たり攻撃への耐性を高める処理と、
+復旧用エンベロープは、今後の拡張として扱います。

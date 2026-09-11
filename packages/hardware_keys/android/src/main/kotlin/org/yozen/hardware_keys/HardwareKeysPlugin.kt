@@ -1,3 +1,4 @@
+// Androidプラグインの雛形。現在はOSバージョン取得のみで、Keystoreによる鍵操作は未実装。
 package org.yozen.hardware_keys
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin

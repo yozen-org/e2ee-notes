@@ -1,3 +1,4 @@
+// WindowsのウィンドウとFlutterエンジンを接続し、プラグインを登録する。
 #include "flutter_window.h"
 
 #include <optional>

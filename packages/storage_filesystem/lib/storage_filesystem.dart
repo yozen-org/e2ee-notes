@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:storage_api/storage_api.dart';
 
+// 保存キーをルート配下のファイルに対応付けるローカル保存アダプター。
 final class FilesystemBlobStore implements BlobStore {
   FilesystemBlobStore(Directory root) : _root = root.absolute;
   final Directory _root;
@@ -18,6 +19,7 @@ final class FilesystemBlobStore implements BlobStore {
   Future<void> putIfAbsent(String key, Uint8List value) async {
     final file = File(_pathFor(key));
     await file.parent.create(recursive: true);
+    // 同じ内容の再保存は許容し、違う内容なら競合にする。複数プロセス間の原子的な作成は未対応。
     if (await file.exists()) {
       final existing = await file.readAsBytes();
       if (!_sameBytes(existing, value)) throw ObjectConflict(key);
@@ -49,6 +51,7 @@ final class FilesystemBlobStore implements BlobStore {
     await file.delete();
   }
 
+  // 空のキー・絶対パス・親への移動を拒否し、OSの区切り文字に変換する。
   String _pathFor(String key) {
     if (key.isEmpty || key.startsWith('/') || key.split('/').contains('..')) {
       throw ArgumentError.value(key, 'key', 'must be a relative object key');

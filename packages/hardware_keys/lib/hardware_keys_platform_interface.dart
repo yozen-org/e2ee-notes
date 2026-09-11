@@ -5,22 +5,21 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'hardware_keys.dart';
 import 'hardware_keys_method_channel.dart';
 
+// OS別の実装やテスト用の代替実装を差し替えるための共通インターフェース。
 abstract class HardwareKeysPlatform extends PlatformInterface {
-  /// Constructs a HardwareKeysPlatform.
+  /// 実装の差し替えを検証するトークンを初期化する。
   HardwareKeysPlatform() : super(token: _token);
 
   static final Object _token = Object();
 
   static HardwareKeysPlatform _instance = MethodChannelHardwareKeys();
 
-  /// The default instance of [HardwareKeysPlatform] to use.
+  /// 現在利用するプラットフォーム実装。
   ///
-  /// Defaults to [MethodChannelHardwareKeys].
+  /// 既定では[MethodChannelHardwareKeys]を使用する。
   static HardwareKeysPlatform get instance => _instance;
 
-  /// Platform-specific implementations should set this with their own
-  /// platform-specific class that extends [HardwareKeysPlatform] when
-  /// they register themselves.
+  /// OS別の実装を登録するときに、[HardwareKeysPlatform]の派生クラスを設定する。
   static set instance(HardwareKeysPlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;

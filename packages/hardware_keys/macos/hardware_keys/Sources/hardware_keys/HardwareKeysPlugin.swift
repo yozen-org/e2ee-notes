@@ -16,6 +16,7 @@ private enum HardwareKeyError: Error {
   case accessControl
 }
 
+// Flutterからの鍵操作を受け取り、CryptoKitとSecure Enclaveで処理する。
 public class HardwareKeysPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "hardware_keys", binaryMessenger: registrar.messenger)
@@ -67,6 +68,7 @@ private func dictionary(_ value: Any?) throws -> [String: Any] {
   return result
 }
 
+// 秘密鍵を取り出せない端末専用のP-256鍵を作成する。必要に応じてユーザー認証を要求する。
 private func createKey(requireUserPresence: Bool) throws -> SecureEnclave.P256.KeyAgreement.PrivateKey {
   guard SecureEnclave.isAvailable else { throw HardwareKeyError.unavailable }
   var flags: SecAccessControlCreateFlags = [.privateKeyUsage]
@@ -84,6 +86,7 @@ private func createKey(requireUserPresence: Bool) throws -> SecureEnclave.P256.K
   )
 }
 
+// 公開鍵の非圧縮表現と、そのSHA-256による識別子を返す。
 private func publicDocument(_ key: P256.KeyAgreement.PublicKey) -> [String: Any] {
   let bytes = key.x963Representation
   return [
@@ -94,6 +97,7 @@ private func publicDocument(_ key: P256.KeyAgreement.PublicKey) -> [String: Any]
   ]
 }
 
+// 新しい一時鍵でECDHを行い、導出した対称鍵で保管庫の鍵を暗号化する。
 private func wrap(secret: Data, recipient: [String: Any]) throws -> [String: Any] {
   guard secret.count == 32 else { throw HardwareKeyError.invalidKeyLength }
   guard
@@ -123,6 +127,7 @@ private func wrap(secret: Data, recipient: [String: Any]) throws -> [String: Any
   ]
 }
 
+// 端末専用ハンドルから秘密鍵を利用し、宛先と認証タグを検証して保管庫の鍵を復元する。
 private func unwrap(handle: Data, envelope: [String: Any]) throws -> Data {
   guard SecureEnclave.isAvailable else { throw HardwareKeyError.unavailable }
   let key = try SecureEnclave.P256.KeyAgreement.PrivateKey(
@@ -152,6 +157,7 @@ private func unwrap(handle: Data, envelope: [String: Any]) throws -> Data {
   return secret
 }
 
+// 受信者IDと製品固有のドメインを使い、共有秘密からラップ用の32バイト鍵を導出する。
 private func deriveKey(_ shared: SharedSecret, recipientKeyID: String) -> SymmetricKey {
   shared.hkdfDerivedSymmetricKey(
     using: SHA256.self,

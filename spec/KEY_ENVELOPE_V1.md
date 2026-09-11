@@ -1,35 +1,37 @@
-# Vault-key envelope protocol version 1
+# 保管庫の鍵エンベローププロトコル v1
 
-This format wraps the 32-byte vault key `K` for one device recipient key. The
-recipient private key is non-exportable hardware key material; its persisted
-handle is device-local and must never be copied as a recovery credential.
+この形式は、32バイトの保管庫の鍵 `K` を、ある端末の受信者鍵向けにラップ
+（暗号化して保護）します。受信者の秘密鍵は取り出せないハードウェア鍵です。
+永続化したハンドルはその端末専用であり、復旧用の認証情報としてコピーしてはいけません。
 
-## Recipient public document
+## 受信者の公開鍵ドキュメント
 
-- Algorithm: NIST P-256 ECDH
-- `publicKey`: base64 of the 65-byte uncompressed ANSI X9.63 representation
-- `keyID`: lowercase hexadecimal SHA-256 digest of those 65 bytes
+- アルゴリズム: NIST P-256 ECDH
+- `publicKey`: 65バイトの非圧縮ANSI X9.63表現をbase64で表したもの
+- `keyID`: その65バイトのSHA-256ダイジェストを小文字の16進数で表したもの
 - `suite`: `P256-HKDF-SHA256-AES256GCM`
 
-The public document contains `version`, `suite`, `keyID`, and `publicKey`.
-Pairing must authenticate this document before another device wraps `K` for it.
+公開鍵ドキュメントは`version`、`suite`、`keyID`、`publicKey`を含みます。
+別の端末がこの公開鍵に対して `K` をラップする前に、ペアリング処理で
+このドキュメントの真正性を確認しなければなりません。
 
-## Envelope
+## エンベロープ
 
-The sender creates a fresh ephemeral P-256 key and performs ECDH with the
-recipient public key. HKDF-SHA256 derives a 32-byte wrapping key using:
+送信側は新しい一時的なP-256鍵を生成し、受信者の公開鍵とECDH鍵共有を行います。
+次の入力を用いて、HKDF-SHA256で32バイトのラップ用鍵を導出します。
 
-- input key material: the ECDH shared secret
-- salt: UTF-8 recipient `keyID`
-- info: UTF-8 `yozen.e2ee-notes.key-wrap.v1`
+- 入力鍵素材: ECDHで得た共有秘密
+- salt: 受信者の`keyID`のUTF-8表現
+- info: `yozen.e2ee-notes.key-wrap.v1`のUTF-8表現
 
-AES-256-GCM encrypts `K` with a fresh 12-byte nonce and authenticates the UTF-8
-string `<suite>:<recipientKeyID>`. CryptoKit's combined representation is
-stored in `sealedKey`: base64 of nonce, ciphertext, then the 16-byte tag.
+AES-256-GCMで、新しい12バイトのnonceを使って `K` を暗号化し、
+UTF-8文字列`<suite>:<recipientKeyID>`を認証します。
+CryptoKitの結合表現を`sealedKey`に保存します。これはnonce、暗号文、
+16バイトの認証タグをこの順で連結し、base64で表したものです。
 
-The envelope contains `version`, `suite`, `recipientKeyID`,
-`ephemeralPublicKey`, and `sealedKey`. Every field is authenticated either by
-key derivation, AAD, or cryptographic validation during unwrap.
+エンベロープは`version`、`suite`、`recipientKeyID`、`ephemeralPublicKey`、
+`sealedKey`を含みます。各フィールドは、鍵導出、AAD、またはアンラップ
+（保護された鍵の復元）時の暗号学的検証によって認証されます。
 
-This protocol is derived from `lab-keybridge`, with a product-specific HKDF
-domain. It is intentionally not wire-compatible with the lab namespace.
+このプロトコルは`lab-keybridge`に由来しますが、HKDFのドメインには製品固有の値を
+使います。実験用の名前空間とは意図的に通信形式の互換性を持たせていません。

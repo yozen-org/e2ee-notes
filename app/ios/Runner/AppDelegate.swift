@@ -1,3 +1,4 @@
+// iOSアプリの起動とFlutterエンジン初期化時のプラグイン登録を担当する。
 import Flutter
 import UIKit
 

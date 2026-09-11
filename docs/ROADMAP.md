@@ -1,36 +1,36 @@
-# Roadmap
+# ロードマップ
 
-## M0 — foundation
+## M0 — 基盤
 
-- Flutter scaffold for Android, iOS, Linux, macOS, and Windows.
-- Pure Dart E2EE model and storage contracts.
-- Federated hardware-key plugin scaffold for all target platforms.
-- Architecture and threat-model documents.
+- Android、iOS、Linux、macOS、Windows向けのFlutterアプリの雛形。
+- Dartのみで構成するE2EEモデルと、ストレージの共通契約。
+- すべての対象プラットフォーム向けに、OS別の実装を分離したハードウェア鍵プラグインの雛形。
+- アーキテクチャと脅威モデルの文書。
 
-## M1 — local encrypted notes
+## M1 — ローカルの暗号化メモ
 
-- [x] Freeze canonical operation and encrypted-object protocol version 1.
-- [x] Publish deterministic cross-language test vectors.
-- [x] Implement authenticated operation encryption in `e2ee_core`.
-- [x] Implement immutable filesystem storage and the minimal editor UI.
+- [x] 正規化された操作と暗号化オブジェクトのプロトコルv1を確定する。
+- [x] 言語間で同じ結果を再現できるテストベクターを公開する。
+- [x] `e2ee_core`に操作の認証付き暗号化を実装する。
+- [x] 既存オブジェクトを変更しないファイルシステム保存と、最小限の編集UIを実装する。
 
-## M2 — hardware-backed vault key
+## M2 — ハードウェアで保護する保管庫の鍵
 
-- [x] Import the Keybridge design into a product-namespaced specification.
-- [ ] Implement macOS Secure Enclave and Linux TPM adapters.
-  - [x] Apple Secure Enclave plugin implementation for macOS and iOS.
-  - [ ] Linux TPM plugin implementation and physical-device verification.
-- [x] Store a wrapped vault-key envelope for the local Apple device.
-- Demonstrate one shared encrypted vault on macOS and Linux.
+- [x] Keybridgeの設計を、製品固有の名前空間を持つ仕様に取り込む。
+- [ ] macOSのSecure EnclaveとLinuxのTPMアダプターを実装する。
+  - [x] macOSとiOS向けのApple Secure Enclaveプラグインを実装する。
+  - [ ] LinuxのTPMプラグインを実装し、実機で検証する。
+- [x] ローカルのApple端末向けに、ラップした保管庫の鍵エンベロープを保存する。
+- macOSとLinuxで、1つの暗号化保管庫を共有できることを実証する。
 
-## M3 — mobile and Windows
+## M3 — モバイルとWindows
 
-- Add iOS Secure Enclave, Android Keystore/StrongBox, and Windows TPM adapters.
-- Add authenticated QR pairing and device revocation.
-- Run one conformance suite on all five platforms.
+- iOSのSecure Enclave、AndroidのKeystore/StrongBox、WindowsのTPMアダプターを追加する。
+- 相手の真正性を確認するQRペアリングと、端末の認可を取り消す機能を追加する。
+- 5つすべてのプラットフォームで、共通の適合性テストスイートを実行する。
 
-## M4 — provider independence
+## M4 — 保存先プロバイダーへの非依存
 
-- Add S3-compatible/R2 and WebDAV adapters.
-- Add ciphertext-only replication, health reporting, and repair.
-- Specify snapshots, garbage collection, rollback detection, and recovery.
+- S3互換/R2とWebDAVのアダプターを追加する。
+- 暗号文だけの複製、稼働状態の報告、修復機能を追加する。
+- スナップショット、不要オブジェクトの回収、ロールバック検出、復旧の仕様を定める。

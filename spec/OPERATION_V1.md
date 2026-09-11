@@ -1,8 +1,8 @@
-# Operation protocol version 1
+# 操作プロトコル v1
 
-## Plaintext operation
+## 平文の操作
 
-An operation is UTF-8 JSON with fields emitted in this exact order:
+操作はUTF-8のJSONで表現し、フィールドを必ず次の順番で出力します。
 
 1. `version`
 2. `operationID`
@@ -11,32 +11,32 @@ An operation is UTF-8 JSON with fields emitted in this exact order:
 5. `sequence`
 6. `timestampMicros`
 7. `kind`
-8. `baseOperationID`, when present
-9. `title`, when present
-10. `body`, when present
+8. `baseOperationID`（存在する場合）
+9. `title`（存在する場合）
+10. `body`（存在する場合）
 
-Version 1 uses compact JSON without insignificant whitespace. Identifiers are
-32 random bytes encoded as 64 lowercase hexadecimal characters. Timestamps are
-signed microseconds since the Unix epoch. `kind` is `create`, `update`, or
-`delete`.
+v1では、意味を持たない空白を含まないコンパクトなJSONを使います。
+識別子はランダムな32バイトを、小文字の16進数64文字で表現します。
+タイムスタンプはUnixエポックからの経過時間を、符号付きのマイクロ秒単位で表します。
+`kind`は`create`（作成）、`update`（更新）、`delete`（削除）のいずれかです。
 
-JSON object ordering is specified only to produce reproducible conformance
-vectors. Readers must accept fields in any order and reject unsupported
-versions.
+JSONオブジェクトのフィールド順を規定する目的は、適合性検証用のテストベクターを
+再現可能にすることだけです。読み取り側は任意のフィールド順を受け入れ、
+未対応のバージョンを拒否しなければなりません。
 
-## Encrypted object
+## 暗号化オブジェクト
 
-- Algorithm: AES-256-GCM
-- Key: the 32-byte vault key `K`
-- Nonce: fresh random 12 bytes per object
-- Authentication tag: 16 bytes
-- Associated data: UTF-8 `yozen.e2ee-notes.operation.v1:<objectID>`
-- `ciphertext`: base64 of ciphertext followed by the authentication tag
+- アルゴリズム: AES-256-GCM
+- 鍵: 32バイトの保管庫の鍵 `K`
+- nonce: オブジェクトごとに新しく生成するランダムな12バイト
+- 認証タグ: 16バイト
+- 追加認証データ（AAD）: `yozen.e2ee-notes.operation.v1:<objectID>` のUTF-8表現
+- `ciphertext`: 暗号文の後ろに認証タグを連結し、base64で表現したもの
 
-The storage key is `operations/<objectID>.json`. The operation ID, encrypted
-object ID, and storage object ID must match. Moving ciphertext to another object
-key therefore fails authentication or identity validation.
+保存キーは`operations/<objectID>.json`です。操作ID、暗号化オブジェクトID、
+保存オブジェクトIDは一致しなければなりません。そのため、暗号文を別の保存キーへ
+移すと、認証またはIDの検証に失敗します。
 
-The JSON envelope fields are `version`, `suite`, `objectID`, `nonce`, and
-`ciphertext`. Version 1's suite string is `AES-256-GCM`.
-
+JSONエンベロープ（暗号文とそのメタデータを格納する外側の形式）のフィールドは、
+`version`、`suite`、`objectID`、`nonce`、`ciphertext`です。
+v1の`suite`文字列は`AES-256-GCM`です。

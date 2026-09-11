@@ -10,6 +10,7 @@ import (
 	"testing"
 )
 
+// Dartと共有する固定ベクターから、暗号化検証に必要な値を読み込む。
 type vector struct {
 	VaultKeyHex     string `json:"vaultKeyHex"`
 	ObjectID        string `json:"objectID"`
@@ -21,6 +22,7 @@ type vector struct {
 	} `json:"encryptedObject"`
 }
 
+// Go標準ライブラリで同じ暗号文が得られ、元の平文へ復号できることを検証する。
 func TestOperationCreateVector(t *testing.T) {
 	data, err := os.ReadFile("../../spec/test-vectors/operation-create-v1.json")
 	if err != nil {

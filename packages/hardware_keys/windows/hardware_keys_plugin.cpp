@@ -1,3 +1,4 @@
+// Windowsプラグインの雛形。現在はOSバージョン取得のみで、TPMによる鍵操作は未実装。
 #include "hardware_keys_plugin.h"
 
 // This must be included before many other Windows headers.
