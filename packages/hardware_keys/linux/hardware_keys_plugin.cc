@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "hardware_keys_plugin_private.h"
+#include "tpm_method_handler.h"
 
 #define HARDWARE_KEYS_PLUGIN(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST((obj), hardware_keys_plugin_get_type(), \
@@ -28,7 +29,7 @@ static void hardware_keys_plugin_handle_method_call(
   if (strcmp(method, "getPlatformVersion") == 0) {
     response = get_platform_version();
   } else {
-    response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
+    response = handle_tpm_method(method, fl_method_call_get_args(method_call));
   }
 
   fl_method_call_respond(method_call, response, nullptr);

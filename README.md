@@ -34,5 +34,6 @@ flutter run -d macos
 
 The app stores encrypted immutable operations in the platform's
 application-support directory. On Secure Enclave-capable Apple devices, its
-vault key is wrapped for a non-exportable P-256 recipient key. Other platforms
-temporarily use a software key until their hardware adapter is implemented.
+vault key is wrapped for a non-exportable P-256 recipient key. Windows and Linux
+use TPM 2.0 when available; see [TPM setup and limitations](docs/TPM.md).
+Platforms without a supported hardware provider use a software key.

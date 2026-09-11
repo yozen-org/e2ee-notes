@@ -5,8 +5,14 @@ project(${PROJECT_NAME} LANGUAGES CXX)
 
 set(PLUGIN_NAME "hardware_keys_plugin")
 
+pkg_check_modules(TPM2 REQUIRED IMPORTED_TARGET tss2-esys tss2-mu tss2-tctildr)
+
 list(APPEND PLUGIN_SOURCES
   "hardware_keys_plugin.cc"
+  "tpm_context.cc"
+  "tpm_sealed_blob.cc"
+  "tpm_key_store.cc"
+  "tpm_method_handler.cc"
 )
 
 add_library(${PLUGIN_NAME} SHARED
@@ -23,6 +29,7 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter)
 target_link_libraries(${PLUGIN_NAME} PRIVATE PkgConfig::GTK)
+target_link_libraries(${PLUGIN_NAME} PRIVATE PkgConfig::TPM2)
 
 set(hardware_keys_bundled_libraries
   ""
@@ -54,6 +61,7 @@ apply_standard_settings(${TEST_RUNNER})
 target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(${TEST_RUNNER} PRIVATE flutter)
 target_link_libraries(${TEST_RUNNER} PRIVATE PkgConfig::GTK)
+target_link_libraries(${TEST_RUNNER} PRIVATE PkgConfig::TPM2)
 target_link_libraries(${TEST_RUNNER} PRIVATE gtest_main gmock)
 
 include(GoogleTest)

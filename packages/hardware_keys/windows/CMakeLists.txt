@@ -10,6 +10,7 @@ set(PLUGIN_NAME "hardware_keys_plugin")
 list(APPEND PLUGIN_SOURCES
   "hardware_keys_plugin.cpp"
   "hardware_keys_plugin.h"
+  "tpm_key_store.cpp"
 )
 
 add_library(${PLUGIN_NAME} SHARED
@@ -19,6 +20,9 @@ add_library(${PLUGIN_NAME} SHARED
 )
 
 apply_standard_settings(${PLUGIN_NAME})
+get_target_property(plugin_definitions ${PLUGIN_NAME} COMPILE_DEFINITIONS)
+list(REMOVE_ITEM plugin_definitions "_HAS_EXCEPTIONS=0")
+set_property(TARGET ${PLUGIN_NAME} PROPERTY COMPILE_DEFINITIONS "${plugin_definitions}")
 
 set_target_properties(${PLUGIN_NAME} PROPERTIES
   CXX_VISIBILITY_PRESET hidden)
@@ -27,6 +31,7 @@ target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL)
 target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
+target_link_libraries(${PLUGIN_NAME} PRIVATE ncrypt tbs)
 
 set(hardware_keys_bundled_libraries
   ""
@@ -51,9 +56,13 @@ add_executable(${TEST_RUNNER}
   ${PLUGIN_SOURCES}
 )
 apply_standard_settings(${TEST_RUNNER})
+get_target_property(test_definitions ${TEST_RUNNER} COMPILE_DEFINITIONS)
+list(REMOVE_ITEM test_definitions "_HAS_EXCEPTIONS=0")
+set_property(TARGET ${TEST_RUNNER} PROPERTY COMPILE_DEFINITIONS "${test_definitions}")
 target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(${TEST_RUNNER} PRIVATE flutter_wrapper_plugin)
 target_link_libraries(${TEST_RUNNER} PRIVATE gtest_main gmock)
+target_link_libraries(${TEST_RUNNER} PRIVATE ncrypt tbs)
 add_custom_command(TARGET ${TEST_RUNNER} POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   "${FLUTTER_LIBRARY}" $<TARGET_FILE_DIR:${TEST_RUNNER}>

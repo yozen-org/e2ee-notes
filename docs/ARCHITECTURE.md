@@ -48,8 +48,11 @@ E2EEコアは、バージョン付きの平文モデル、認証付き暗号化�
 保護済みの鍵があれば復元し、既存のソフトウェア鍵があれば同じ鍵を保護する形に移行します。
 どちらもなければ、鍵をメモリ上で生成します。受信者鍵ハンドルと鍵エンベロープを保存し、
 新規の鍵を平文ファイルには書き込みません。移行時は鍵の保護・検証・保存が完了した後、
-元のソフトウェア鍵ファイルを削除します。ハードウェアアダプターが未実装の
-プラットフォームでは、M1のソフトウェア鍵へのフォールバックを引き続き使用します。
+元のソフトウェア鍵ファイルを削除します。WindowsとLinuxではTPM 2.0でKを保護します。
+TPMがない端末と、ハードウェアアダプターが未実装のプラットフォームでは、
+ソフトウェア鍵へのフォールバックを引き続き使用します。
+TPMで保護済みの鍵が復元できない場合は、フォールバックせず停止します。
+設定と制約は[TPM対応](TPM.md)を参照してください。
 ストレージプロバイダーのルートに当たるのは、`storage/`サブディレクトリだけです。
 
 初期のDart製ファイルシステムアダプターは、通常の単一プロセスでのアプリ利用において、
@@ -59,13 +62,15 @@ E2EEコアは、バージョン付きの平文モデル、認証付き暗号化�
 ## 起動時の依存関係の組み立て
 
 `app/lib/src/vault_bootstrap.dart`のswitch式でOSに応じて、
-`AppleVaultKeyProvider`または`SoftwareVaultKeyProvider`を選びます。
-Apple向けProviderがハードウェアの機能を判定し、非対応の場合はソフトウェア鍵を使用します。
+`AppleVaultKeyProvider`・`TpmVaultKeyProvider`・`SoftwareVaultKeyProvider`を選びます。
+ハードウェア向けProviderが利用可否を判定し、非対応の場合はソフトウェア鍵を使用します。
+TPMの保護済み鍵がある場合は、この判定より先に復元し、失敗時には停止します。
 `LocalVault`はコンストラクターで`VaultKeyProvider`を受け取り、
 保存先と端末IDを準備してRepositoryを組み立てます。
 
 `app/lib/src/vault_key_provider/`内で、契約を定義する`vault_key_provider.dart`、
 平文鍵を扱う`software_vault_key_provider.dart`、
-Apple端末の鍵の保護・移行・復元を扱う`apple_vault_key_provider.dart`に分けています。
+Apple端末の鍵を扱う`apple_vault_key_provider.dart`、
+TPMでの保護・移行・復元を扱う`tpm_vault_key_provider.dart`に分けています。
 テストでは同じ`LocalVault`へProviderを直接注入し、ハードウェア側の操作だけを
 代替実装に差し替えます。テスト専用のOS分岐フラグは使用しません。
