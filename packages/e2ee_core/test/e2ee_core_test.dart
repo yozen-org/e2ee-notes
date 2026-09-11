@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:e2ee_core/e2ee_core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   const objectId =
@@ -24,7 +25,7 @@ void main() {
 
   test('matches the independent operation-create vector', () async {
     final fixtureData = await File(
-      '../../spec/test-vectors/operation-create-v1.json',
+      p.join('..', '..', 'spec', 'test-vectors', 'operation-create-v1.json'),
     ).readAsString();
     final fixture = jsonDecode(fixtureData) as Map<String, Object?>;
     final expected = fixture['encryptedObject'] as Map<String, Object?>;

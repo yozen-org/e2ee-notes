@@ -8,6 +8,7 @@ import 'package:e2ee_notes/src/vault_key_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hardware_keys/hardware_keys.dart';
 import 'package:notes_repository/notes_repository.dart';
+import 'package:path/path.dart' as p;
 import 'package:storage_filesystem/storage_filesystem.dart';
 
 final class FakeHardwareKeys extends HardwareKeys {
@@ -99,9 +100,9 @@ void main() {
     const softwareVault = LocalVault(keyProvider: SoftwareVaultKeyProvider());
     final original = await softwareVault.openAt(directory);
     await original.save(title: 'Before migration', body: 'Existing secret');
-    final deviceFile = File('${directory.path}/device-id.bin');
+    final deviceFile = File(p.join(directory.path, 'device-id.bin'));
     final deviceId = await deviceFile.readAsBytes();
-    final legacyKey = File('${directory.path}/vault-key.bin');
+    final legacyKey = File(p.join(directory.path, 'vault-key.bin'));
     final keyBeforeMigration = await legacyKey.readAsBytes();
     final softwareReopened = await softwareVault.openAt(directory);
     expect((await softwareReopened.loadNotes()).single.body, 'Existing secret');
@@ -121,15 +122,11 @@ void main() {
 
     expect(await legacyKey.exists(), isFalse);
     expect(
-      await File(
-        '${directory.path}${Platform.pathSeparator}recipient-key.handle',
-      ).exists(),
+      await File(p.join(directory.path, 'recipient-key.handle')).exists(),
       isTrue,
     );
     expect(
-      await File(
-        '${directory.path}${Platform.pathSeparator}vault-key.envelope.json',
-      ).exists(),
+      await File(p.join(directory.path, 'vault-key.envelope.json')).exists(),
       isTrue,
     );
 
@@ -147,7 +144,7 @@ void main() {
       const softwareVault = LocalVault(keyProvider: SoftwareVaultKeyProvider());
       final original = await softwareVault.openAt(directory);
       await original.save(title: 'Existing', body: 'Keep this note');
-      final keyFile = File('${directory.path}/vault-key.bin');
+      final keyFile = File(p.join(directory.path, 'vault-key.bin'));
       final originalKey = await keyFile.readAsBytes();
       final reopened = await LocalVault(
         keyProvider: AppleVaultKeyProvider(
@@ -160,7 +157,7 @@ void main() {
       expect((await reopened.loadNotes()).single.body, 'Keep this note');
       expect(await keyFile.readAsBytes(), originalKey);
       expect(
-        await File('${directory.path}/recipient-key.handle').exists(),
+        await File(p.join(directory.path, 'recipient-key.handle')).exists(),
         isFalse,
       );
     });
@@ -171,14 +168,18 @@ void main() {
     final directory = await Directory.systemTemp.createTemp('e2ee-incomplete-');
     addTearDown(() => directory.delete(recursive: true));
     final key = await const SoftwareVaultKeyProvider().openKey(directory);
-    await File('${directory.path}/recipient-key.handle').writeAsBytes([1]);
+    await File(p.join(directory.path, 'recipient-key.handle'))
+        .writeAsBytes([1]);
     final vault = LocalVault(
       keyProvider: AppleVaultKeyProvider(FakeHardwareKeys()),
     );
     await expectLater(vault.openAt(directory), throwsFormatException);
-    expect(await File('${directory.path}/vault-key.bin').readAsBytes(), key);
     expect(
-      await File('${directory.path}/vault-key.envelope.json').exists(),
+      await File(p.join(directory.path, 'vault-key.bin')).readAsBytes(),
+      key,
+    );
+    expect(
+      await File(p.join(directory.path, 'vault-key.envelope.json')).exists(),
       isFalse,
     );
   });

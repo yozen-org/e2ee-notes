@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:hardware_keys/hardware_keys.dart';
+import 'package:path/path.dart' as p;
 
 import 'local_material.dart';
 
@@ -16,10 +17,8 @@ final class SoftwareVaultKeyProvider implements VaultKeyProvider {
   const SoftwareVaultKeyProvider();
 
   @override
-  Future<Uint8List> openKey(Directory root) => readOrCreateLocalBytes(
-    File('${root.path}${Platform.pathSeparator}vault-key.bin'),
-    32,
-  );
+  Future<Uint8List> openKey(Directory root) =>
+      readOrCreateLocalBytes(File(p.join(root.path, 'vault-key.bin')), 32);
 }
 
 // Apple端末の機能判定と、端末鍵による保護・復元・平文鍵からの移行を担当する。
@@ -36,18 +35,10 @@ final class AppleVaultKeyProvider implements VaultKeyProvider {
       return const SoftwareVaultKeyProvider().openKey(root);
     }
 
-    final softwareKey = File(
-      '${root.path}${Platform.pathSeparator}vault-key.bin',
-    );
-    final handleFile = File(
-      '${root.path}${Platform.pathSeparator}recipient-key.handle',
-    );
-    final envelopeFile = File(
-      '${root.path}${Platform.pathSeparator}vault-key.envelope.json',
-    );
-    final publicFile = File(
-      '${root.path}${Platform.pathSeparator}recipient-public.json',
-    );
+    final softwareKey = File(p.join(root.path, 'vault-key.bin'));
+    final handleFile = File(p.join(root.path, 'recipient-key.handle'));
+    final envelopeFile = File(p.join(root.path, 'vault-key.envelope.json'));
+    final publicFile = File(p.join(root.path, 'recipient-public.json'));
 
     // ハンドルとエンベロープの片方だけが残った状態では、新しい鍵で上書きせず失敗させる。
     final hasHandle = await handleFile.exists();

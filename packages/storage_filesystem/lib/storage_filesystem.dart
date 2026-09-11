@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:path/path.dart' as p;
 import 'package:storage_api/storage_api.dart';
 
 // 保存キーをルート配下のファイルに対応付けるローカル保存アダプター。
@@ -37,8 +38,8 @@ final class FilesystemBlobStore implements BlobStore {
       followLinks: false,
     )) {
       if (entity is! File) continue;
-      final relative = entity.absolute.path.substring(_root.path.length + 1);
-      final key = relative.replaceAll(Platform.pathSeparator, '/');
+      final relative = p.relative(entity.path, from: _root.path);
+      final key = p.posix.joinAll(p.split(relative));
       if (key.startsWith(prefix)) result.add(key);
     }
     return result..sort();
@@ -51,12 +52,20 @@ final class FilesystemBlobStore implements BlobStore {
     await file.delete();
   }
 
-  // 空のキー・絶対パス・親への移動を拒否し、OSの区切り文字に変換する。
+  // 保存キーの区切りは常に「/」。OSのパスへ変換し、ルート外への解決を拒否する。
   String _pathFor(String key) {
     if (key.isEmpty || key.startsWith('/') || key.split('/').contains('..')) {
       throw ArgumentError.value(key, 'key', 'must be a relative object key');
     }
-    return '${_root.path}${Platform.pathSeparator}${key.replaceAll('/', Platform.pathSeparator)}';
+    final path = p.joinAll([_root.path, ...key.split('/')]);
+    if (!p.isWithin(_root.path, path)) {
+      throw ArgumentError.value(
+        key,
+        'key',
+        'must stay within the storage root',
+      );
+    }
+    return path;
   }
 
   bool _sameBytes(List<int> left, List<int> right) {
