@@ -1,53 +1,67 @@
-# Architecture
+# アーキテクチャ
 
 ```text
 Flutter UI
     |
-Application service
-    +-- E2EE core
-    +-- HardwareKey interface
-    +-- Storage interface
-             +-- filesystem
-             +-- S3/R2, WebDAV, Drive (later)
+アプリケーションサービス
+    +-- E2EEコア
+    +-- ハードウェア鍵のインターフェース
+    +-- ストレージのインターフェース
+             +-- ファイルシステム
+             +-- S3/R2、WebDAV、Drive（今後対応）
 ```
 
-The E2EE core owns versioned plaintext models, authenticated encryption,
-operation ordering, conflicts, and snapshots. It does not import Flutter,
-filesystem APIs, cloud SDKs, or platform key APIs.
+E2EEコアは、バージョン付きの平文モデル、認証付き暗号化、操作の順序付け、
+競合、スナップショットを担当します。Flutter、ファイルシステムAPI、
+クラウドSDK、プラットフォーム固有の鍵APIはインポートしません。
 
-Storage adapters receive opaque bytes and object keys. They never receive a
-vault key or decrypted note. Hardware-key adapters create a non-exportable
-recipient key, export its public document, and unwrap a vault-key envelope. They
-never implement synchronization.
+ストレージアダプターが受け取るのは、内容を解釈しないバイト列とオブジェクトキーだけです。
+保管庫の鍵や復号済みのメモは受け取りません。ハードウェア鍵アダプターは、
+取り出せない受信者鍵を生成し、その公開鍵ドキュメントを出力し、
+保管庫の鍵エンベロープをアンラップ（保護された鍵を復元）します。
+同期処理は担当しません。
 
-| Platform | Hardware-backed recipient key |
+| プラットフォーム | ハードウェアで保護する受信者鍵 |
 | --- | --- |
-| macOS/iOS | Secure Enclave through Swift |
-| Android | Android Keystore, preferring StrongBox |
+| macOS/iOS | Swift経由のSecure Enclave |
+| Android | Android Keystore（StrongBoxを優先） |
 | Windows | CNG Platform Crypto Provider / TPM |
-| Linux | TPM 2.0 resource-manager device |
+| Linux | TPM 2.0のリソースマネージャーデバイス |
 
-Hardware support is capability-based. A client must report whether its key is
-hardware-backed rather than silently claiming equal assurance on every device.
+ハードウェア対応の判断は、端末が実際に提供する機能に基づきます。
+クライアントは、どの端末でも同じ保護水準があるかのように扱うのではなく、
+鍵がハードウェアで保護されているかどうかを報告しなければなりません。
 
 ```text
-edit note
-   -> canonical operation
-   -> authenticated encryption with vault key K
-   -> immutable encrypted object
-   -> selected Storage adapter
+メモを編集
+   -> 正規化された操作
+   -> 保管庫の鍵 K による認証付き暗号化
+   -> 変更されない暗号化オブジェクト
+   -> 選択したストレージアダプター
 ```
 
-Another authorized device unwraps the same `K`, lists immutable objects,
-authenticates and decrypts them locally, and rebuilds note state.
+別の認可済み端末は、同じ `K` をアンラップし、変更されないオブジェクトの一覧を取得して、
+端末内で認証・復号を行い、メモの状態を再構築します。
 
-The application bootstrap creates a random vault key and device ID in the
-platform application-support directory. On Apple hardware with Secure Enclave,
-it stores a device-local opaque recipient-key handle and a portable vault-key
-envelope, then removes the temporary plaintext key. On platforms whose hardware
-adapter is not implemented yet, it retains the M1 software-key fallback. Only
-the `storage/` subdirectory is the storage-provider root.
+アプリの初期化処理では、プラットフォームのアプリケーションサポートディレクトリに、
+ランダムな保管庫の鍵と端末IDを作成します。Secure Enclaveを備えたApple端末では、
+端末専用で内部を解釈しない受信者鍵ハンドルと、持ち運び可能な保管庫の鍵エンベロープを
+保存した後、一時的な平文鍵を削除します。ハードウェアアダプターが未実装の
+プラットフォームでは、M1のソフトウェア鍵へのフォールバックを引き続き使用します。
+ストレージプロバイダーのルートに当たるのは、`storage/`サブディレクトリだけです。
 
-The initial Dart filesystem adapter enforces immutability within normal
-single-process application use. Cross-process atomic create and provider-level
-conditional writes are explicit follow-up requirements before concurrent sync.
+初期のDart製ファイルシステムアダプターは、通常の単一プロセスでのアプリ利用において、
+既存オブジェクトが変更されないことを保証します。並行して同期処理を行う前に、
+複数プロセス間での原子的な作成と、プロバイダー側での条件付き書き込みに対応する必要があります。
+
+## 起動時の依存関係の組み立て
+
+`app/lib/src/vault_bootstrap.dart`のswitch式でOSに応じて、
+`AppleVaultKeyProvider`または`SoftwareVaultKeyProvider`を選びます。
+Apple向けProviderがハードウェアの機能を判定し、非対応の場合はソフトウェア鍵を使用します。
+`LocalVault`はコンストラクターで`VaultKeyProvider`を受け取り、
+保存先と端末IDを準備してRepositoryを組み立てます。
+
+鍵の保存・移行・復元は`vault_key_provider.dart`にまとめています。
+テストでは同じ`LocalVault`へProviderを直接注入し、ハードウェア側の操作だけを
+代替実装に差し替えます。テスト専用のOS分岐フラグは使用しません。

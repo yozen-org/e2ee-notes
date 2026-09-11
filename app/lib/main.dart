@@ -1,9 +1,11 @@
-import 'package:e2ee_notes/src/local_vault.dart';
+import 'package:e2ee_notes/src/vault_bootstrap.dart';
 import 'package:flutter/material.dart';
 import 'package:notes_repository/notes_repository.dart';
 
-void main() => runApp(E2eeNotesApp(repository: LocalVault.open()));
+// 起動時に保管庫を開き、準備中・失敗・メモ一覧の表示を画面側で切り替える。
+void main() => runApp(E2eeNotesApp(repository: openLocalVault()));
 
+// アプリ全体のテーマと最初の画面を設定する。
 class E2eeNotesApp extends StatelessWidget {
   const E2eeNotesApp({required this.repository, super.key});
 
@@ -44,6 +46,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
     });
   }
 
+  // 新規作成と編集で同じダイアログを使い、保存時だけRepositoryへ渡す。
   Future<void> _edit([NoteRecord? note]) async {
     var title = note?.title ?? '';
     var body = note?.body ?? '';
@@ -94,6 +97,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
     if (mounted) _reload();
   }
 
+  // 削除操作を記録して一覧を更新する。保存済みの履歴そのものは消さない。
   Future<void> _delete(NoteRecord note) async {
     await (await widget.repository).delete(note.id);
     if (mounted) _reload();
@@ -114,6 +118,7 @@ class _NotesHomePageState extends State<NotesHomePage> {
           ),
         ),
       ),
+      // 保管庫の読み込み結果に応じて、エラー・待機・空状態・一覧を表示する。
       body: FutureBuilder<List<NoteRecord>>(
         future: _notes,
         builder: (context, snapshot) {

@@ -1,19 +1,26 @@
+// 一時保存先で再起動後の復元を検証し、モックの鍵実装で保護形式への移行を確認する。
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/src/local_vault.dart';
+import 'package:e2ee_notes/src/vault_key_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hardware_keys/hardware_keys.dart';
 import 'package:notes_repository/notes_repository.dart';
 import 'package:storage_filesystem/storage_filesystem.dart';
 
 final class FakeHardwareKeys extends HardwareKeys {
+  FakeHardwareKeys({this.available = true, this.hardwareBacked = true});
+
+  final bool available;
+  final bool hardwareBacked;
+
   @override
   Future<HardwareKeyCapabilities> capabilities() async =>
-      const HardwareKeyCapabilities(
-        available: true,
-        hardwareBacked: true,
+      HardwareKeyCapabilities(
+        available: available,
+        hardwareBacked: hardwareBacked,
         provider: 'Test hardware',
       );
 
@@ -89,19 +96,28 @@ void main() {
       'e2ee-notes-migrate-',
     );
     addTearDown(() => directory.delete(recursive: true));
-    final legacyKey = File(
-      '${directory.path}${Platform.pathSeparator}vault-key.bin',
-    );
-    await legacyKey.writeAsBytes(
-      Uint8List.fromList(List<int>.generate(32, (i) => i)),
-    );
+    const softwareVault = LocalVault(keyProvider: SoftwareVaultKeyProvider());
+    final original = await softwareVault.openAt(directory);
+    await original.save(title: 'Before migration', body: 'Existing secret');
+    final deviceFile = File('${directory.path}/device-id.bin');
+    final deviceId = await deviceFile.readAsBytes();
+    final legacyKey = File('${directory.path}/vault-key.bin');
+    final keyBeforeMigration = await legacyKey.readAsBytes();
+    final softwareReopened = await softwareVault.openAt(directory);
+    expect((await softwareReopened.loadNotes()).single.body, 'Existing secret');
+    expect(await legacyKey.readAsBytes(), keyBeforeMigration);
 
-    final repository = await LocalVault.openAt(
-      directory,
-      hardwareKeys: FakeHardwareKeys(),
-      enableHardwareForTesting: true,
+    final repository = await LocalVault(
+      keyProvider: AppleVaultKeyProvider(FakeHardwareKeys()),
+    ).openAt(directory);
+    final migratedNote = (await repository.loadNotes()).single;
+    expect(migratedNote.title, 'Before migration');
+    await repository.save(
+      noteId: migratedNote.id,
+      title: 'Migrated',
+      body: 'Still readable',
     );
-    await repository.save(title: 'Migrated', body: 'Still readable');
+    expect(await deviceFile.readAsBytes(), deviceId);
 
     expect(await legacyKey.exists(), isFalse);
     expect(
@@ -117,11 +133,53 @@ void main() {
       isTrue,
     );
 
-    final reopened = await LocalVault.openAt(
-      directory,
-      hardwareKeys: FakeHardwareKeys(),
-      enableHardwareForTesting: true,
-    );
+    final reopened = await LocalVault(
+      keyProvider: AppleVaultKeyProvider(FakeHardwareKeys()),
+    ).openAt(directory);
     expect((await reopened.loadNotes()).single.title, 'Migrated');
+  });
+
+  // 利用不可とハードウェア保護なしのどちらも、既存のソフトウェア鍵を引き継ぐ。
+  for (final capabilities in [(false, true), (true, false)]) {
+    test('Apple fallback preserves the key for $capabilities', () async {
+      final directory = await Directory.systemTemp.createTemp('e2ee-fallback-');
+      addTearDown(() => directory.delete(recursive: true));
+      const softwareVault = LocalVault(keyProvider: SoftwareVaultKeyProvider());
+      final original = await softwareVault.openAt(directory);
+      await original.save(title: 'Existing', body: 'Keep this note');
+      final keyFile = File('${directory.path}/vault-key.bin');
+      final originalKey = await keyFile.readAsBytes();
+      final reopened = await LocalVault(
+        keyProvider: AppleVaultKeyProvider(
+          FakeHardwareKeys(
+            available: capabilities.$1,
+            hardwareBacked: capabilities.$2,
+          ),
+        ),
+      ).openAt(directory);
+      expect((await reopened.loadNotes()).single.body, 'Keep this note');
+      expect(await keyFile.readAsBytes(), originalKey);
+      expect(
+        await File('${directory.path}/recipient-key.handle').exists(),
+        isFalse,
+      );
+    });
+  }
+
+  // 不完全な保護状態を新しい鍵で置き換えないことを確認する。
+  test('rejects incomplete hardware state without replacing the key', () async {
+    final directory = await Directory.systemTemp.createTemp('e2ee-incomplete-');
+    addTearDown(() => directory.delete(recursive: true));
+    final key = await const SoftwareVaultKeyProvider().openKey(directory);
+    await File('${directory.path}/recipient-key.handle').writeAsBytes([1]);
+    final vault = LocalVault(
+      keyProvider: AppleVaultKeyProvider(FakeHardwareKeys()),
+    );
+    await expectLater(vault.openAt(directory), throwsFormatException);
+    expect(await File('${directory.path}/vault-key.bin').readAsBytes(), key);
+    expect(
+      await File('${directory.path}/vault-key.envelope.json').exists(),
+      isFalse,
+    );
   });
 }
