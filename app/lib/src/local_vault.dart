@@ -6,12 +6,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:storage_filesystem/storage_filesystem.dart';
 
 import 'read_or_create_random_bytes.dart';
-import 'vault_key_provider/vault_key_provider.dart';
+import 'vault_key_provider.dart';
 
 final class LocalVault {
-  const LocalVault({required this.keyProvider});
+  const LocalVault({required this.keyProviderFactory});
 
-  final VaultKeyProvider keyProvider;
+  final VaultKeyProvider Function(Directory root) keyProviderFactory;
 
   Future<EncryptedNotesRepository> open() async {
     final support = await getApplicationSupportDirectory();
@@ -20,7 +20,7 @@ final class LocalVault {
 
   Future<EncryptedNotesRepository> openAt(Directory root) async {
     await root.create(recursive: true);
-    final vaultKey = await keyProvider.openKey(root);
+    final vaultKey = await keyProviderFactory(root).openKey();
 
     final deviceIdBytes = await readOrCreateRandomBytes(
       File(p.join(root.path, 'device-id.bin')),

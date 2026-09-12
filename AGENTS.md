@@ -46,13 +46,14 @@
 異なる理由で変更される責任が同居している場合は、責任ごとにファイルを分ける。
 インターフェースによる契約の定義と、その契約を実現する各実装は、それぞれ独立した責任としてファイルを分ける。
 同じ概念に属することだけを理由に同居させず、関連するファイルをディレクトリでまとめる。
-例えば、`VaultKeyProvider`・`SoftwareVaultKeyProvider`・`AppleVaultKeyProvider`は、次のように配置する。
+例えば、`VaultKeyStorage`と各保存方式の実装は、次のように配置する。
 
 ```text
-vault_key_provider/
-  vault_key_provider.dart
-  software_vault_key_provider.dart
-  apple_vault_key_provider.dart
+vault_key_storage/
+  vault_key_storage.dart
+  plaintext_file_vault_key_storage.dart
+  secure_enclave_vault_key_storage.dart
+  tpm_vault_key_storage.dart
 ```
 
 一つの実装の内部だけで使う補助的な型や関数は、その実装と同じファイルに置いてよい。

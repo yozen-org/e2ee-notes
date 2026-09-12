@@ -1,13 +1,14 @@
 # Windows・LinuxのTPM対応
 
-WindowsとLinuxでは、起動時に`TpmVaultKeyProvider`を選択します。
+WindowsとLinuxでは、起動時に`TpmVaultKeyStorage`を選択し、共通の`VaultKeyProvider`へ渡します。
 TPM 2.0がない端末では従来のソフトウェア鍵を使用します。
 すでに`vault-key.tpm`がある場合は、TPMが使えなくてもソフトウェア鍵には切り替えず、復元エラーを返します。
 権限不足やTPM操作の失敗もエラーとして扱います。
 
 ## コードの配置
 
-- `app/lib/src/vault_key_provider/tpm_vault_key_provider.dart`：鍵の復元・移行・新規作成。
+- `app/lib/src/vault_key_provider.dart`：全保存方式に共通の鍵の復元・移行・新規作成。
+- `app/lib/src/vault_key_storage/tpm_vault_key_storage.dart`：TPMによるKの保護・復元と保存。
 - `app/lib/src/vault_key_files/tpm_protected_key_file.dart`：保護済み鍵の保存。
 - `packages/hardware_keys/lib/tpm_keys.dart`：TPMによる鍵の保護・復元の契約。
 - `packages/hardware_keys/lib/method_channel_tpm_keys.dart`：Flutterからネイティブ実装への接続。
@@ -24,7 +25,8 @@ TPM 2.0がない端末では従来のソフトウェア鍵を使用します。
 4. 既存のソフトウェア鍵があれば、そのKを保護する形に移行する。
 5. 鍵がなければ、Kをメモリ上で生成する。
 
-保護した直後にKを復元し、元のKと一致することを確認します。
+Storageは保護した直後にKを復元し、元のKと一致することを確認します。
+Providerは保存後にもStorageから読み直し、一致を確認してからKを返します。
 保存には同じディレクトリ配下の一時ファイルとrenameを使います。
 新規Kを平文ファイルへは書き込みません。移行元の平文鍵は、保護済み鍵を保存してから一致を確認して削除します。
 保存後、削除前に終了した場合は、次回の復元時に同じ確認と削除を行います。

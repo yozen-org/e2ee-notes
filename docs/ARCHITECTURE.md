@@ -62,15 +62,32 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 ## 起動時の依存関係の組み立て
 
 `app/lib/src/vault_bootstrap.dart`のswitch式でOSに応じて、
-`AppleVaultKeyProvider`・`TpmVaultKeyProvider`・`SoftwareVaultKeyProvider`を選びます。
-ハードウェア向けProviderが利用可否を判定し、非対応の場合はソフトウェア鍵を使用します。
-TPMの保護済み鍵がある場合は、この判定より先に復元し、失敗時には停止します。
-`LocalVault`はコンストラクターで`VaultKeyProvider`を受け取り、
-保存先と端末IDを準備してRepositoryを組み立てます。
+`SecureEnclaveVaultKeyStorage`・`TpmVaultKeyStorage`・`PlaintextFileVaultKeyStorage`を選びます。
+どの保存方式も共通の`VaultKeyProvider`へ渡します。
+ハードウェア保存には、移行元兼フォールバック先の`PlaintextFileVaultKeyStorage`も渡します。
 
-`app/lib/src/vault_key_provider/`内で、契約を定義する`vault_key_provider.dart`、
-平文鍵を扱う`software_vault_key_provider.dart`、
-Apple端末の鍵を扱う`apple_vault_key_provider.dart`、
-TPMでの保護・移行・復元を扱う`tpm_vault_key_provider.dart`に分けています。
-テストでは同じ`LocalVault`へProviderを直接注入し、ハードウェア側の操作だけを
-代替実装に差し替えます。テスト専用のOS分岐フラグは使用しません。
+`LocalVault`は保存先が決まってからProviderを組み立てられるよう、
+`keyProviderFactory`をコンストラクターで受け取ります。
+`openAt`で保存ディレクトリを準備し、そこに紐づいたProviderからKを取得してRepositoryを組み立てます。
+
+## 鍵の保存とライフサイクルの境界
+
+`app/lib/src/vault_key_storage/`には`VaultKeyStorage`の契約と3つの実装を分けて配置します。
+Storageは保存先を持ち、以下を担当します。
+
+- `exists()`：保存済み鍵の有無を確認する。不完全なファイル構成や別のハードウェア方式との競合はエラーにする。
+- `isAvailable()`：保存先の利用可否を確認する。存在確認とは別の操作。
+- `read()`：保存データを読み、必要なら復号して32バイトのKを返す。
+- `write(key)`：渡されたKを保存する。ハードウェア実装では保護と復元検証をしてから保存する。
+
+`app/lib/src/vault_key_provider.dart`は、OSや暗号方式を知らず、
+復元・フォールバック・平文鍵からの移行・新規生成を判断します。
+保存済み鍵があれば利用可否の判定より先に読み出し、復元失敗はそのまま返します。
+Apple・TPMのどちらでも、復元できない鍵の代わりに別のKを生成しません。
+
+生成・移行時は、書き込んだStorageからKを読み直して一致を検証します。
+移行元の平文ファイルは、この検証と元ファイルとの一致確認が成功してから削除します。
+`PlaintextFileVaultKeyStorage.removeIfMatching`が、平文ファイルの一致確認と削除を担当します。
+
+テストでは本番と同じProviderとStorageを通し、ハードウェア操作の境界を代替実装へ差し替えます。
+共通Providerの判断だけを検証するテストでは、Storageの境界を差し替えます。
