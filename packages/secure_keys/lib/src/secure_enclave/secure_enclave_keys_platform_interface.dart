@@ -23,6 +23,8 @@ abstract class SecureEnclaveKeysPlatform extends PlatformInterface {
 
   Future<RecipientKey> createRecipientKey({required bool requireUserPresence});
 
+  Future<RecipientKey> openRecipientKey(Uint8List keyHandle);
+
   Future<VaultKeyEnvelope> wrapVaultKey({
     required Uint8List vaultKey,
     required RecipientPublicKey recipient,

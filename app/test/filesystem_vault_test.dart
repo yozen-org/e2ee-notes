@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/src/local_vault.dart';
-import 'package:e2ee_notes/src/vault_key_provider.dart';
-import 'package:e2ee_notes/src/vault_key_storage/plaintext_file_vault_key_storage.dart';
-import 'package:e2ee_notes/src/vault_key_storage/secure_enclave_vault_key_storage.dart';
+import 'package:e2ee_notes/src/vault_key_selection/vault_key_selector.dart';
+import 'package:e2ee_notes/src/vault_key_selection/plaintext_vault_key_selector.dart';
+import 'package:e2ee_notes/src/vault_key_selection/secure_enclave_vault_key_selector.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_enclave.dart';
 import 'package:notes_repository/notes_repository.dart';
@@ -20,31 +20,46 @@ final class FakeSecureEnclaveKeys extends SecureEnclaveKeys {
     this.beforeWrap,
   });
 
+  int generatedKeys = 0;
+  int capabilityChecks = 0;
+  static const publicKey = RecipientPublicKey(
+    version: 1,
+    suite: 'test-suite',
+    keyId: 'test-key',
+    publicKey: 'test-public',
+  );
+
   final bool corruptUnwrappedKey;
   bool available;
   bool hardwareBacked;
   final Future<void> Function()? beforeWrap;
 
   @override
-  Future<HardwareKeyCapabilities> capabilities() async =>
-      HardwareKeyCapabilities(
-        available: available,
-        hardwareBacked: hardwareBacked,
-        provider: 'Test hardware',
-      );
+  Future<HardwareKeyCapabilities> capabilities() async {
+    capabilityChecks++;
+    return HardwareKeyCapabilities(
+      available: available,
+      hardwareBacked: hardwareBacked,
+      provider: 'Test hardware',
+    );
+  }
 
   @override
   Future<RecipientKey> createRecipientKey({
     bool requireUserPresence = false,
-  }) async => RecipientKey(
-    handle: Uint8List.fromList([1, 2, 3]),
-    publicKey: const RecipientPublicKey(
-      version: 1,
-      suite: 'test-suite',
-      keyId: 'test-key',
-      publicKey: 'test-public',
-    ),
-  );
+  }) async {
+    generatedKeys++;
+    return RecipientKey(
+      handle: Uint8List.fromList([1, 2, 3]),
+      publicKey: publicKey,
+    );
+  }
+
+  @override
+  Future<RecipientKey> openRecipientKey(Uint8List keyHandle) async {
+    if (!available || !hardwareBacked) throw StateError('Hardware unavailable');
+    return RecipientKey(handle: keyHandle, publicKey: publicKey);
+  }
 
   @override
   Future<VaultKeyEnvelope> wrapVaultKey({
@@ -73,16 +88,53 @@ final class FakeSecureEnclaveKeys extends SecureEnclaveKeys {
   }
 }
 
-VaultKeyProvider plaintextKeyProvider(Directory root) =>
-    VaultKeyProvider(storage: PlaintextFileVaultKeyStorage(root));
+VaultKeySelector plaintextKeySelector(Directory root) =>
+    PlaintextVaultKeySelector(root);
 
-VaultKeyProvider appleKeyProvider(Directory root, SecureEnclaveKeys hardware) =>
-    VaultKeyProvider(
-      storage: SecureEnclaveVaultKeyStorage(root, hardware),
-      migrationSource: PlaintextFileVaultKeyStorage(root),
-    );
+VaultKeySelector appleKeySelector(Directory root, SecureEnclaveKeys hardware) =>
+    SecureEnclaveVaultKeySelector(root, hardware);
+
+Future<Uint8List> openSelectedKey(VaultKeySelector selector) async =>
+    (await selector.select()).openKey();
 
 void main() {
+  test('Apple reopening uses the saved handle without a public document or generation', () async {
+    final directory = await Directory.systemTemp.createTemp('apple-reopen-');
+    addTearDown(() => directory.delete(recursive: true));
+    final hardware = FakeSecureEnclaveKeys();
+    final key = await openSelectedKey(appleKeySelector(directory, hardware));
+    final envelope = File(p.join(directory.path, 'vault-key.envelope.json'));
+    final saved = await envelope.readAsBytes();
+    await File(p.join(directory.path, 'recipient-public.json')).delete();
+    hardware.capabilityChecks = 0;
+    expect(await openSelectedKey(appleKeySelector(directory, hardware)), key);
+    expect(hardware.generatedKeys, 1);
+    expect(hardware.capabilityChecks, 0);
+    expect(await envelope.readAsBytes(), saved);
+  });
+
+  for (final filename in [
+    'recipient-key.handle',
+    'vault-key.envelope.json',
+    'vault-key.tpm',
+  ]) {
+    test('plaintext selection rejects protected state: $filename', () async {
+      final directory = await Directory.systemTemp.createTemp(
+        'plaintext-foreign-',
+      );
+      addTearDown(() => directory.delete(recursive: true));
+      await File(p.join(directory.path, filename)).writeAsBytes([1]);
+      await expectLater(
+        openSelectedKey(plaintextKeySelector(directory)),
+        throwsFormatException,
+      );
+      expect(
+        await File(p.join(directory.path, 'vault-key.bin')).exists(),
+        isFalse,
+      );
+    });
+  }
+
   test(
     'existing Apple key never falls back when hardware becomes unavailable',
     () async {
@@ -91,16 +143,16 @@ void main() {
       );
       addTearDown(() => directory.delete(recursive: true));
       final hardware = FakeSecureEnclaveKeys();
-      final provider = appleKeyProvider(directory, hardware);
-      final key = await provider.openKey();
+      final selector = appleKeySelector(directory, hardware);
+      final key = await openSelectedKey(selector);
       final envelope = File(p.join(directory.path, 'vault-key.envelope.json'));
       final savedEnvelope = await envelope.readAsBytes();
       hardware.available = false;
-      await expectLater(provider.openKey(), throwsStateError);
+      await expectLater(openSelectedKey(selector), throwsStateError);
       final plaintext = File(p.join(directory.path, 'vault-key.bin'));
       expect(await plaintext.exists(), isFalse);
       await plaintext.writeAsBytes(key);
-      await expectLater(provider.openKey(), throwsStateError);
+      await expectLater(openSelectedKey(selector), throwsStateError);
       expect(await plaintext.readAsBytes(), key);
       expect(await envelope.readAsBytes(), savedEnvelope);
     },
@@ -112,11 +164,11 @@ void main() {
       final directory = await Directory.systemTemp.createTemp('apple-foreign-');
       addTearDown(() => directory.delete(recursive: true));
       await File(p.join(directory.path, 'vault-key.tpm')).writeAsBytes([1]);
-      final provider = appleKeyProvider(
+      final selector = appleKeySelector(
         directory,
         FakeSecureEnclaveKeys(available: false),
       );
-      await expectLater(provider.openKey(), throwsFormatException);
+      await expectLater(openSelectedKey(selector), throwsFormatException);
       expect(
         await File(p.join(directory.path, 'vault-key.bin')).exists(),
         isFalse,
@@ -132,7 +184,7 @@ void main() {
         );
         addTearDown(() => directory.delete(recursive: true));
         final plaintextKey = File(p.join(directory.path, 'vault-key.bin'));
-        final provider = appleKeyProvider(
+        final selector = appleKeySelector(
           directory,
           FakeSecureEnclaveKeys(
             corruptUnwrappedKey: failVerification,
@@ -141,11 +193,11 @@ void main() {
           ),
         );
         if (failVerification) {
-          await expectLater(provider.openKey(), throwsFormatException);
+          await expectLater(openSelectedKey(selector), throwsFormatException);
         } else {
-          final key = await provider.openKey();
+          final key = await openSelectedKey(selector);
           expect(key, hasLength(32));
-          expect(await provider.openKey(), key);
+          expect(await openSelectedKey(selector), key);
         }
         expect(await plaintextKey.exists(), isFalse);
       },
@@ -159,8 +211,8 @@ void main() {
     addTearDown(() => directory.delete(recursive: true));
     final plaintextKey = File(p.join(directory.path, 'vault-key.bin'));
     await plaintextKey.writeAsBytes([1, 2, 3]);
-    final provider = appleKeyProvider(directory, FakeSecureEnclaveKeys());
-    await expectLater(provider.openKey(), throwsFormatException);
+    final selector = appleKeySelector(directory, FakeSecureEnclaveKeys());
+    await expectLater(openSelectedKey(selector), throwsFormatException);
     expect(await plaintextKey.readAsBytes(), [1, 2, 3]);
     expect(
       await File(p.join(directory.path, 'recipient-key.handle')).exists(),
@@ -207,7 +259,7 @@ void main() {
       'e2ee-notes-migrate-',
     );
     addTearDown(() => directory.delete(recursive: true));
-    const softwareVault = LocalVault(keyProviderFactory: plaintextKeyProvider);
+    const softwareVault = LocalVault(keySelectorFactory: plaintextKeySelector);
     final original = await softwareVault.openAt(directory);
     await original.save(title: 'Before migration', body: 'Existing secret');
     final deviceFile = File(p.join(directory.path, 'device-id.bin'));
@@ -219,8 +271,8 @@ void main() {
     expect(await legacyKey.readAsBytes(), keyBeforeMigration);
 
     final repository = await LocalVault(
-      keyProviderFactory: (root) =>
-          appleKeyProvider(root, FakeSecureEnclaveKeys()),
+      keySelectorFactory: (root) =>
+          appleKeySelector(root, FakeSecureEnclaveKeys()),
     ).openAt(directory);
     final migratedNote = (await repository.loadNotes()).single;
     expect(migratedNote.title, 'Before migration');
@@ -242,8 +294,8 @@ void main() {
     );
 
     final reopened = await LocalVault(
-      keyProviderFactory: (root) =>
-          appleKeyProvider(root, FakeSecureEnclaveKeys()),
+      keySelectorFactory: (root) =>
+          appleKeySelector(root, FakeSecureEnclaveKeys()),
     ).openAt(directory);
     expect((await reopened.loadNotes()).single.title, 'Migrated');
   });
@@ -253,14 +305,14 @@ void main() {
       final directory = await Directory.systemTemp.createTemp('e2ee-fallback-');
       addTearDown(() => directory.delete(recursive: true));
       const softwareVault = LocalVault(
-        keyProviderFactory: plaintextKeyProvider,
+        keySelectorFactory: plaintextKeySelector,
       );
       final original = await softwareVault.openAt(directory);
       await original.save(title: 'Existing', body: 'Keep this note');
       final keyFile = File(p.join(directory.path, 'vault-key.bin'));
       final originalKey = await keyFile.readAsBytes();
       final reopened = await LocalVault(
-        keyProviderFactory: (root) => appleKeyProvider(
+        keySelectorFactory: (root) => appleKeySelector(
           root,
           FakeSecureEnclaveKeys(
             available: capabilities.$1,
@@ -280,12 +332,12 @@ void main() {
   test('rejects incomplete hardware state without replacing the key', () async {
     final directory = await Directory.systemTemp.createTemp('e2ee-incomplete-');
     addTearDown(() => directory.delete(recursive: true));
-    final key = await plaintextKeyProvider(directory).openKey();
+    final key = await openSelectedKey(plaintextKeySelector(directory));
     await File(p.join(directory.path, 'recipient-key.handle'))
         .writeAsBytes([1]);
     final vault = LocalVault(
-      keyProviderFactory: (root) =>
-          appleKeyProvider(root, FakeSecureEnclaveKeys()),
+      keySelectorFactory: (root) =>
+          appleKeySelector(root, FakeSecureEnclaveKeys()),
     );
     await expectLater(vault.openAt(directory), throwsFormatException);
     expect(
@@ -301,12 +353,12 @@ void main() {
   test('failed wrap verification preserves the software key', () async {
     final directory = await Directory.systemTemp.createTemp('e2ee-verify-');
     addTearDown(() => directory.delete(recursive: true));
-    final key = await plaintextKeyProvider(directory).openKey();
-    final provider = appleKeyProvider(
+    final key = await openSelectedKey(plaintextKeySelector(directory));
+    final selector = appleKeySelector(
       directory,
       FakeSecureEnclaveKeys(corruptUnwrappedKey: true),
     );
-    await expectLater(provider.openKey(), throwsFormatException);
+    await expectLater(openSelectedKey(selector), throwsFormatException);
     expect(
       await File(p.join(directory.path, 'vault-key.bin')).readAsBytes(),
       key,
@@ -329,17 +381,17 @@ void main() {
           'e2ee-leftover-',
         );
         addTearDown(() => directory.delete(recursive: true));
-        final provider = appleKeyProvider(directory, FakeSecureEnclaveKeys());
-        final key = await provider.openKey();
+        final selector = appleKeySelector(directory, FakeSecureEnclaveKeys());
+        final key = await openSelectedKey(selector);
         final leftover = Uint8List.fromList(key);
         if (!matching) leftover[0] ^= 1;
         final softwareFile = File(p.join(directory.path, 'vault-key.bin'));
         await softwareFile.writeAsBytes(leftover);
         if (matching) {
-          expect(await provider.openKey(), key);
+          expect(await openSelectedKey(selector), key);
           expect(await softwareFile.exists(), isFalse);
         } else {
-          await expectLater(provider.openKey(), throwsFormatException);
+          await expectLater(openSelectedKey(selector), throwsFormatException);
           expect(await softwareFile.readAsBytes(), leftover);
         }
       },

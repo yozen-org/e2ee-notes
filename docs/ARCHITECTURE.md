@@ -61,42 +61,60 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 
 ## 起動時の依存関係の組み立て
 
-`app/lib/src/vault_bootstrap.dart`のswitch式でOSに応じて、
-`SecureEnclaveVaultKeyStorage`・`TpmVaultKeyStorage`・`PlaintextFileVaultKeyStorage`を選びます。
-どの保存方式も共通の`VaultKeyProvider`へ渡します。
-ハードウェア保存には、移行元兼フォールバック先の`PlaintextFileVaultKeyStorage`も渡します。
+`app/lib/src/vault_bootstrap.dart`のswitch式でOSに応じた`VaultKeySelector`を選びます。
+`LocalVault`は`keySelectorFactory`を受け取り、保存ディレクトリを準備してから
+Selectorの`select()`で`VaultKeyService`を組み立てます。
 
-`LocalVault`は保存先が決まってからProviderを組み立てられるよう、
-`keyProviderFactory`をコンストラクターで受け取ります。
-`openAt`で保存ディレクトリを準備し、そこに紐づいたProviderからKを取得してRepositoryを組み立てます。
+```text
+vault_bootstrap → OSに対応するVaultKeySelector
+                         ↓ select()
+                   VaultKeyService
+                     ├─ EncryptionKey
+                     ├─ DecryptionKey
+                     ├─ VaultKeyRepository
+                     └─ 移行元のPlaintextVaultKeyRepository（必要な場合）
+```
 
-## 鍵の保存とライフサイクルの境界
+`app/lib/src/vault_key_selection/`の各Selectorが、保存済みの鍵参照と端末の利用可否を判断します。
+Secure EnclaveのCapabilitiesとTPMの`isAvailable()`はこの段階で使い、Serviceへ渡しません。
+既存の保護鍵を優先し、その復元に失敗しても平文保存へ切り替えません。
+不完全なApple鍵ファイルや別方式の保護鍵があれば、鍵を生成せずエラーにします。
+平文用Selectorも保護鍵ファイルを確認し、未対応OSで別のKを作ることを防ぎます。
 
-`app/lib/src/vault_key_storage/`には`VaultKeyStorage`の契約と3つの実装を分けて配置します。
-Storageは保存先を持ち、以下を担当します。
+Secure Enclaveでは、保存済みハンドルから`openRecipientKey`で同じ鍵を再取得します。
+公開鍵はハンドルからネイティブ側で導くため、既存の`recipient-public.json`がなくても復元できます。
+新規作成時だけ受信者鍵を生成し、公開鍵側と秘密鍵側の操作をServiceに渡します。
+TPMでは既存のネイティブ接続を使う暗号化・復号アダプターを渡します。
+Windowsの永続鍵の取得とLinuxのストレージ親鍵の再構成は、引き続きネイティブ実装が担当します。
 
-- `exists()`：保存済み鍵の有無を確認する。不完全なファイル構成や別のハードウェア方式との競合はエラーにする。
-- `isAvailable()`：保存先の利用可否を確認する。存在確認とは別の操作。
-- `read()`：保存データを読み、必要なら復号して32バイトのKを返す。
-- `write(key)`：渡されたKを保存する。ハードウェア実装では保護と復元検証をしてから保存する。
+## 鍵の操作・保存・ライフサイクルの境界
 
-`app/lib/src/vault_key_provider.dart`は、OSや暗号方式を知らず、
-復元・フォールバック・平文鍵からの移行・新規生成を判断します。
-保存済み鍵があれば利用可否の判定より先に読み出し、復元失敗はそのまま返します。
-Apple・TPMのどちらでも、復元できない鍵の代わりに別のKを生成しません。
+`VaultKeyService`は32バイトのKの生成・復元・平文鍵からの移行を担当します。
+OS、Capabilities、ハンドル、エンベロープの形式を知りません。
+保護する場合は`EncryptionKey`と`DecryptionKey`の両方を必須で受け取ります。
+署名は現在のVaultの処理で使わないため、`SigningKey`は依存に含めません。
+平文保存は明示的な`VaultKeyService.plaintext`で構成し、暗号化したことにはしません。
 
-生成・移行時は、書き込んだStorageからKを読み直して一致を検証します。
-移行元の平文ファイルは、この検証と元ファイルとの一致確認が成功してから削除します。
-`PlaintextFileVaultKeyStorage.removeIfMatching`が、平文ファイルの一致確認と削除を担当します。
+`app/lib/src/vault_key_repository/`は保存形式ごとの読み書きを担当します。
+共通契約は`exists()`・`read()`・`write(bytes)`だけで、暗号操作や利用可否判定は含みません。
+保護用Repositoryが受け取るのは暗号化済みバイト列です。
+Secure Enclave用はハンドル・エンベロープ・公開鍵ドキュメント、TPM用は保護済みblobを保存します。
+ファイル名と保存形式は従来どおりです。
 
-テストでは本番と同じProviderとStorageを通し、ハードウェア操作の境界を代替実装へ差し替えます。
-共通Providerの判断だけを検証するテストでは、Storageの境界を差し替えます。
+Serviceは暗号化直後に復号してKの一致を確認し、保存後にも読み直して再度復号・検証します。
+移行元の平文ファイルは、これらの検証と元ファイルとの一致確認に成功してから削除します。
+保存後に終了して平文鍵が残った場合も、次回の復元時に同じ確認を行います。
+
+テストでは本番と同じSelector・Service・Repositoryを通し、ネイティブ接続を代替実装へ差し替えます。
+Service単体のテストでは操作能力とRepositoryを差し替え、保存先に暗号文が渡ることや
+保存後の検証に失敗した際に移行元を残すことを確認します。
 
 ## 鍵の操作能力の契約
 
 `packages/secure_keys/lib/src/`には、Vaultに依存しない以下のインターフェースを定義しています。
 `package:secure_keys/secure_keys.dart`からまとめてインポートできます。
-現段階では契約のみで、既存のStorageやネイティブ実装への接続は行っていません。
+現在のVaultでは`EncryptionKey`と`DecryptionKey`を使います。
+残りの操作能力は契約のみで、署名・検証などの実装は追加していません。
 
 | インターフェース | 操作 |
 | --- | --- |
@@ -118,3 +136,18 @@ Apple・TPMのどちらでも、復元できない鍵の代わりに別のKを�
 `tpm.dart`（既存のTPM接続）から参照します。
 各方式のDart実装は`src/secure_enclave/`と`src/tpm/`に配置しています。
 ネイティブ実装はFlutterプラグインの規約に従い、各OSのディレクトリに配置します。
+
+## 現在接続している暗号操作の範囲
+
+`SecureEnclaveEncryptionKey`・`SecureEnclaveDecryptionKey`は既存の
+`wrapVaultKey`・`unwrapVaultKey`へのアダプターです。
+入力平文は32バイト、暗号文は従来のエンベロープJSONのUTF-8バイト列です。
+暗号スイートは`P256-HKDF-SHA256-AES256GCM`で、暗号化は受信者公開鍵を使い、
+復号は選択済みのSecure Enclave鍵ハンドルを使います。
+
+`TpmEncryptionKey`・`TpmDecryptionKey`も入力平文は32バイトです。
+Windowsでは既存のRSA-OAEPによるラップ、Linuxでは既存のseal・unsealを使います。
+暗号文はOS固有の保護済みblobで、Windows・Linux間の相互復号には対応しません。
+Linuxのsealを公開鍵暗号や鍵共有として公開しているわけではありません。
+これらは現在のKの保護に必要な操作を接続したもので、任意長のメッセージ暗号化や
+任意の鍵を選ぶ汎用ネイティブAPIへの拡張は行っていません。

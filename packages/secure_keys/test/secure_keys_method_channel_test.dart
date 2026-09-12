@@ -27,6 +27,14 @@ void main() {
                   'publicKey': 'public',
                 },
               };
+            case 'openRecipientKey':
+              expect((call.arguments as Map)['keyHandle'], [1, 2]);
+              return {
+                'version': 1,
+                'suite': 'suite',
+                'keyID': 'id',
+                'publicKey': 'public',
+              };
             case 'wrapVaultKey':
               return {
                 'version': 1,
@@ -63,6 +71,9 @@ void main() {
 
     expect(capabilities.provider, 'test');
     expect(recipient.handle, [1, 2]);
+    final reopened = await platform.openRecipientKey(recipient.handle);
+    expect(reopened.publicKey.toMap(), recipient.publicKey.toMap());
+    expect(reopened.handle, recipient.handle);
     expect(envelope.sealedKey, 'sealed');
     expect(unwrapped, hasLength(32));
   });

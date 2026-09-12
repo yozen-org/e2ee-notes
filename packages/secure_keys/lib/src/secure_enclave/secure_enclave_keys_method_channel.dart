@@ -33,6 +33,18 @@ class MethodChannelSecureEnclaveKeys extends SecureEnclaveKeysPlatform {
   }
 
   @override
+  Future<RecipientKey> openRecipientKey(Uint8List keyHandle) async {
+    final result = (await methodChannel.invokeMapMethod<Object?, Object?>(
+      'openRecipientKey',
+      {'keyHandle': keyHandle},
+    ))!;
+    return RecipientKey(
+      handle: keyHandle,
+      publicKey: RecipientPublicKey.fromMap(result),
+    );
+  }
+
+  @override
   Future<VaultKeyEnvelope> wrapVaultKey({
     required Uint8List vaultKey,
     required RecipientPublicKey recipient,

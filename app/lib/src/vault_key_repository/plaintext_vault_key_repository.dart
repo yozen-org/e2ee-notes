@@ -4,19 +4,16 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 
 import '../vault_key_validation.dart';
-import 'vault_key_storage.dart';
+import 'vault_key_repository.dart';
 
-final class PlaintextFileVaultKeyStorage implements VaultKeyStorage {
-  PlaintextFileVaultKeyStorage(Directory root)
+final class PlaintextVaultKeyRepository implements VaultKeyRepository {
+  PlaintextVaultKeyRepository(Directory root)
     : _file = File(p.join(root.path, 'vault-key.bin'));
 
   final File _file;
 
   @override
   Future<bool> exists() => _file.exists();
-
-  @override
-  Future<bool> isAvailable() async => true;
 
   @override
   Future<Uint8List> read() async {
@@ -31,9 +28,5 @@ final class PlaintextFileVaultKeyStorage implements VaultKeyStorage {
     await _file.writeAsBytes(key, flush: true);
   }
 
-  Future<void> removeIfMatching(Uint8List key) async {
-    if (!await exists()) return;
-    requireMatchingVaultKeys(key, await read());
-    await _file.delete();
-  }
+  Future<void> delete() async => _file.delete();
 }

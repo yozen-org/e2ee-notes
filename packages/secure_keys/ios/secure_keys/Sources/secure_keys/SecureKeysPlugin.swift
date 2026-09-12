@@ -39,6 +39,12 @@ public class SecureKeysPlugin: NSObject, FlutterPlugin {
           "keyHandle": FlutterStandardTypedData(bytes: key.dataRepresentation),
           "publicKey": publicDocument(key.publicKey),
         ])
+      case "openRecipientKey":
+        let arguments = try dictionary(call.arguments)
+        guard let handle = (arguments["keyHandle"] as? FlutterStandardTypedData)?.data
+        else { throw HardwareKeyError.invalidArguments }
+        let key = try openKey(handle: handle)
+        result(publicDocument(key.publicKey))
       case "wrapVaultKey":
         let arguments = try dictionary(call.arguments)
         guard
@@ -84,6 +90,14 @@ private func createKey(requireUserPresence: Bool) throws -> SecureEnclave.P256.K
   )
 }
 
+private func openKey(handle: Data) throws -> SecureEnclave.P256.KeyAgreement.PrivateKey {
+  guard SecureEnclave.isAvailable else { throw HardwareKeyError.unavailable }
+  return try SecureEnclave.P256.KeyAgreement.PrivateKey(
+    dataRepresentation: handle,
+    authenticationContext: LAContext()
+  )
+}
+
 private func publicDocument(_ key: P256.KeyAgreement.PublicKey) -> [String: Any] {
   let bytes = key.x963Representation
   return [
@@ -125,10 +139,7 @@ private func wrap(secret: Data, recipient: [String: Any]) throws -> [String: Any
 
 private func unwrap(handle: Data, envelope: [String: Any]) throws -> Data {
   guard SecureEnclave.isAvailable else { throw HardwareKeyError.unavailable }
-  let key = try SecureEnclave.P256.KeyAgreement.PrivateKey(
-    dataRepresentation: handle,
-    authenticationContext: LAContext()
-  )
+  let key = try openKey(handle: handle)
   guard
     envelope["version"] as? Int == 1,
     envelope["suite"] as? String == suite,

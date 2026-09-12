@@ -1,14 +1,18 @@
 # Windows・LinuxのTPM対応
 
-WindowsとLinuxでは、起動時に`TpmVaultKeyStorage`を選択し、共通の`VaultKeyProvider`へ渡します。
+WindowsとLinuxでは、起動時に`TpmVaultKeySelector`が鍵の保存状態とTPMの利用可否を確認し、
+暗号操作とRepositoryを共通の`VaultKeyService`へ渡します。
 TPM 2.0がない端末では従来のソフトウェア鍵を使用します。
 すでに`vault-key.tpm`がある場合は、TPMが使えなくてもソフトウェア鍵には切り替えず、復元エラーを返します。
 権限不足やTPM操作の失敗もエラーとして扱います。
 
 ## コードの配置
 
-- `app/lib/src/vault_key_provider.dart`：全保存方式に共通の鍵の復元・移行・新規作成。
-- `app/lib/src/vault_key_storage/tpm_vault_key_storage.dart`：TPMによるKの保護・復元と保存。
+- `app/lib/src/vault_key_selection/tpm_vault_key_selector.dart`：保存状態とTPMの利用可否に基づく選択。
+- `app/lib/src/vault_key_service.dart`：全保存方式に共通の鍵の復元・移行・新規作成。
+- `app/lib/src/vault_key_repository/tpm_vault_key_repository.dart`：保護済みKの読み書き。
+- `packages/secure_keys/lib/src/tpm/tpm_encryption_key.dart`：`EncryptionKey`としてTPMの保護操作を公開。
+- `packages/secure_keys/lib/src/tpm/tpm_decryption_key.dart`：`DecryptionKey`としてTPMの復元操作を公開。
 - `app/lib/src/vault_key_files/tpm_protected_key_file.dart`：保護済み鍵の保存。
 - `packages/secure_keys/lib/src/tpm/tpm_keys.dart`：TPMによる鍵の保護・復元の契約。
 - `packages/secure_keys/lib/src/tpm/method_channel_tpm_keys.dart`：Flutterからネイティブ実装への接続。
@@ -19,14 +23,14 @@ TPM 2.0がない端末では従来のソフトウェア鍵を使用します。
 
 ## 鍵を開く流れ
 
-1. 保護済み鍵があれば復元する。
-2. Apple用の鍵ファイルがあれば、別方式の鍵を勝手に生成せず停止する。
+1. Apple用の鍵ファイルがあれば、別方式の鍵を勝手に生成せず停止する。
+2. TPMの保護済み鍵があれば、利用可否判定をせず同じ方式で復元する。
 3. TPMがなければソフトウェア鍵を使う。
 4. 既存のソフトウェア鍵があれば、そのKを保護する形に移行する。
 5. 鍵がなければ、Kをメモリ上で生成する。
 
-Storageは保護した直後にKを復元し、元のKと一致することを確認します。
-Providerは保存後にもStorageから読み直し、一致を確認してからKを返します。
+Serviceは保護した直後にKを復元し、元のKと一致することを確認します。
+保存後にもRepositoryから読み直して復号し、一致を確認してからKを返します。
 保存には同じディレクトリ配下の一時ファイルとrenameを使います。
 新規Kを平文ファイルへは書き込みません。移行元の平文鍵は、保護済み鍵を保存してから一致を確認して削除します。
 保存後、削除前に終了した場合は、次回の復元時に同じ確認と削除を行います。
@@ -79,7 +83,7 @@ WindowsではCNG鍵ストアの削除でも復元できなくなります。
 
 ## 検証
 
-Dartのテストは、TPMの境界だけをFakeに置き換え、実際のProviderとファイル保存を通します。
+Dartのテストは、TPMの境界だけをFakeに置き換え、実際のSelector・Service・ファイル保存を通します。
 ネイティブの検証用実行ファイルはFlutterなしでもビルドできます。
 
 ```sh

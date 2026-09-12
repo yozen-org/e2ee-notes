@@ -31,6 +31,14 @@ final class FakeSecureEnclaveKeysPlatform
   );
 
   @override
+  Future<RecipientKey> openRecipientKey(Uint8List keyHandle) async =>
+      RecipientKey(
+        handle: keyHandle,
+        publicKey: (await createRecipientKey(requireUserPresence: false))
+            .publicKey,
+      );
+
+  @override
   Future<Uint8List> unwrapVaultKey({
     required Uint8List keyHandle,
     required VaultKeyEnvelope envelope,
@@ -73,6 +81,7 @@ void main() {
 
     expect(capabilities.hardwareBacked, isTrue);
     expect(recipient.handle, [1]);
+    expect((await hardwareKeys.openRecipientKey(recipient.handle)).handle, [1]);
     expect(envelope.recipientKeyId, 'id');
     expect(key, hasLength(32));
   });

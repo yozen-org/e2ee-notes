@@ -98,6 +98,9 @@ class SecureEnclaveKeys {
         requireUserPresence: requireUserPresence,
       );
 
+  Future<RecipientKey> openRecipientKey(Uint8List keyHandle) =>
+      SecureEnclaveKeysPlatform.instance.openRecipientKey(keyHandle);
+
   Future<VaultKeyEnvelope> wrapVaultKey({
     required Uint8List vaultKey,
     required RecipientPublicKey recipient,

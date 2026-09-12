@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/src/local_vault.dart';
-import 'package:e2ee_notes/src/vault_key_provider.dart';
-import 'package:e2ee_notes/src/vault_key_storage/plaintext_file_vault_key_storage.dart';
-import 'package:e2ee_notes/src/vault_key_storage/tpm_vault_key_storage.dart';
+import 'package:e2ee_notes/src/vault_key_selection/vault_key_selector.dart';
+import 'package:e2ee_notes/src/vault_key_selection/plaintext_vault_key_selector.dart';
+import 'package:e2ee_notes/src/vault_key_selection/tpm_vault_key_selector.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/tpm.dart';
 import 'package:path/path.dart' as p;
@@ -40,22 +40,22 @@ final class FakeTpmKeys implements TpmKeys {
   }
 }
 
+Future<Uint8List> openSelectedKey(VaultKeySelector selector) async =>
+    (await selector.select()).openKey();
+
 void main() {
   late Directory root;
   late File softwareKey;
   late File protectedKey;
   late FakeTpmKeys tpm;
-  late VaultKeyProvider provider;
+  late VaultKeySelector selector;
 
   setUp(() async {
     root = await Directory.systemTemp.createTemp('tpm-vault-');
     softwareKey = File(p.join(root.path, 'vault-key.bin'));
     protectedKey = File(p.join(root.path, 'vault-key.tpm'));
     tpm = FakeTpmKeys();
-    provider = VaultKeyProvider(
-      storage: TpmVaultKeyStorage(root, tpm),
-      migrationSource: PlaintextFileVaultKeyStorage(root),
-    );
+    selector = TpmVaultKeySelector(root, tpm);
   });
 
   tearDown(() => root.delete(recursive: true));
@@ -66,10 +66,7 @@ void main() {
       tpm.beforeProtect = () async =>
           expect(await softwareKey.exists(), isFalse);
       final vault = LocalVault(
-        keyProviderFactory: (root) => VaultKeyProvider(
-          storage: TpmVaultKeyStorage(root, tpm),
-          migrationSource: PlaintextFileVaultKeyStorage(root),
-        ),
+        keySelectorFactory: (root) => TpmVaultKeySelector(root, tpm),
       );
       final repository = await vault.openAt(root);
       await repository.save(title: 'TPM', body: 'Keep this secret');
@@ -88,8 +85,7 @@ void main() {
 
   test('migration preserves the key, device id and encrypted notes', () async {
     final software = LocalVault(
-      keyProviderFactory: (root) =>
-          VaultKeyProvider(storage: PlaintextFileVaultKeyStorage(root)),
+      keySelectorFactory: (root) => PlaintextVaultKeySelector(root),
     );
     final original = await software.openAt(root);
     await original.save(title: 'Before', body: 'Existing note');
@@ -99,14 +95,11 @@ void main() {
     tpm.beforeProtect = () async =>
         expect(await softwareKey.readAsBytes(), key);
     final migrated = await LocalVault(
-      keyProviderFactory: (root) => VaultKeyProvider(
-        storage: TpmVaultKeyStorage(root, tpm),
-        migrationSource: PlaintextFileVaultKeyStorage(root),
-      ),
+      keySelectorFactory: (root) => TpmVaultKeySelector(root, tpm),
     ).openAt(root);
     expect((await migrated.loadNotes()).single.body, 'Existing note');
     expect(await device.readAsBytes(), deviceId);
-    expect(await provider.openKey(), key);
+    expect(await openSelectedKey(selector), key);
     expect(await softwareKey.exists(), isFalse);
   });
 
@@ -114,20 +107,20 @@ void main() {
     'missing TPM uses software storage before a protected key exists',
     () async {
       tpm.available = false;
-      final key = await provider.openKey();
+      final key = await openSelectedKey(selector);
       expect(await softwareKey.readAsBytes(), key);
-      expect(await provider.openKey(), key);
+      expect(await openSelectedKey(selector), key);
       expect(await protectedKey.exists(), isFalse);
     },
   );
 
   test('TPM loss never falls back or replaces the protected key', () async {
-    final key = await provider.openKey();
+    final key = await openSelectedKey(selector);
     final blob = await protectedKey.readAsBytes();
     await softwareKey.writeAsBytes(key);
     tpm.available = false;
     tpm.availabilityChecks = 0;
-    await expectLater(provider.openKey(), throwsStateError);
+    await expectLater(openSelectedKey(selector), throwsStateError);
     expect(tpm.availabilityChecks, 0);
     expect(await protectedKey.readAsBytes(), blob);
     expect(await softwareKey.readAsBytes(), key);
@@ -143,7 +136,7 @@ void main() {
       'invalid protected file cannot trigger key generation: ${invalid.length}',
       () async {
         await protectedKey.writeAsBytes(invalid);
-        await expectLater(provider.openKey(), throwsFormatException);
+        await expectLater(openSelectedKey(selector), throwsFormatException);
         expect(tpm.keys, isEmpty);
         expect(await softwareKey.exists(), isFalse);
         expect(await protectedKey.readAsBytes(), invalid);
@@ -153,9 +146,7 @@ void main() {
 
   for (final failure in ['protect', 'verify', 'persist']) {
     test('$failure failure preserves the original software key', () async {
-      final key = await VaultKeyProvider(
-        storage: PlaintextFileVaultKeyStorage(root),
-      ).openKey();
+      final key = await openSelectedKey(PlaintextVaultKeySelector(root));
       switch (failure) {
         case 'protect':
           tpm.beforeProtect = () async => throw StateError('TPM failed');
@@ -169,7 +160,7 @@ void main() {
         'verify' => throwsFormatException,
         _ => throwsA(isA<FileSystemException>()),
       };
-      await expectLater(provider.openKey(), expectedFailure);
+      await expectLater(openSelectedKey(selector), expectedFailure);
       expect(await softwareKey.readAsBytes(), key);
       expect(await protectedKey.exists(), isFalse);
       expect(
@@ -185,7 +176,7 @@ void main() {
     'failed creation verification leaves no plaintext or protected key',
     () async {
       tpm.transformRestored = (_) => Uint8List(31);
-      await expectLater(provider.openKey(), throwsFormatException);
+      await expectLater(openSelectedKey(selector), throwsFormatException);
       expect(await softwareKey.exists(), isFalse);
       expect(await protectedKey.exists(), isFalse);
     },
@@ -193,15 +184,15 @@ void main() {
 
   test('invalid software key fails without migration', () async {
     await softwareKey.writeAsBytes([1, 2, 3]);
-    await expectLater(provider.openKey(), throwsFormatException);
+    await expectLater(openSelectedKey(selector), throwsFormatException);
     expect(await softwareKey.readAsBytes(), [1, 2, 3]);
     expect(tpm.keys, isEmpty);
   });
 
   test('restored keys must be 32 bytes', () async {
-    await provider.openKey();
+    await openSelectedKey(selector);
     tpm.transformRestored = (_) => Uint8List(31);
-    await expectLater(provider.openKey(), throwsFormatException);
+    await expectLater(openSelectedKey(selector), throwsFormatException);
     expect(await softwareKey.exists(), isFalse);
   });
 
@@ -209,15 +200,15 @@ void main() {
     test(
       'leftover software key is removed only if matching: $matching',
       () async {
-        final key = await provider.openKey();
+        final key = await openSelectedKey(selector);
         final leftover = Uint8List.fromList(key);
         if (!matching) leftover[0] ^= 1;
         await softwareKey.writeAsBytes(leftover);
         if (matching) {
-          expect(await provider.openKey(), key);
+          expect(await openSelectedKey(selector), key);
           expect(await softwareKey.exists(), isFalse);
         } else {
-          await expectLater(provider.openKey(), throwsFormatException);
+          await expectLater(openSelectedKey(selector), throwsFormatException);
           expect(await softwareKey.readAsBytes(), leftover);
         }
       },
@@ -229,7 +220,7 @@ void main() {
       'Apple protected state prevents generating a different key: $filename',
       () async {
         await File(p.join(root.path, filename)).writeAsBytes([1]);
-        await expectLater(provider.openKey(), throwsFormatException);
+        await expectLater(openSelectedKey(selector), throwsFormatException);
         expect(tpm.availabilityChecks, 0);
         expect(await softwareKey.exists(), isFalse);
       },
