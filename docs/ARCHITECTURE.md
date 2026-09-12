@@ -91,3 +91,25 @@ Apple・TPMのどちらでも、復元できない鍵の代わりに別のKを�
 
 テストでは本番と同じProviderとStorageを通し、ハードウェア操作の境界を代替実装へ差し替えます。
 共通Providerの判断だけを検証するテストでは、Storageの境界を差し替えます。
+
+## 鍵の操作能力の契約
+
+`packages/hardware_keys/lib/secure_keys/`には、Vaultに依存しない以下のインターフェースを定義しています。
+`package:hardware_keys/secure_keys.dart`からまとめてインポートできます。
+現段階では契約のみで、既存のStorageやネイティブ実装への接続は行っていません。
+
+| インターフェース | 操作 |
+| --- | --- |
+| `KeyGenerator<K>` | `generate()`で型Kの鍵オブジェクトを生成する |
+| `SigningKey` | `sign(message)`でメッセージに署名する |
+| `VerificationKey` | `verify(message: ..., signature: ...)`で署名を検証する |
+| `DecryptionKey` | `decrypt(ciphertext)`で復号する |
+| `EncryptionKey` | `encrypt(plaintext)`で暗号化する |
+| `KeyAgreementKey` | `deriveSharedSecret(encodedPeerPublicKey)`で共有秘密を導く |
+
+各操作は非同期で、メッセージ・署名・暗号文・共有秘密は`Uint8List`で受け渡します。
+署名・検証の入力は事前計算したダイジェストではなくメッセージです。
+署名が一致しない場合は`false`、接続や権限などの操作失敗は例外で伝えます。
+鍵生成の戻り値Kは鍵を操作するオブジェクトを想定し、秘密鍵の生バイト列の取得を要求しません。
+アルゴリズムや署名・暗号文・公開鍵の符号化形式は、実装を接続する際に対応する鍵型の契約として定めます。
+鍵の再取得、永続化、Vaultの組み立てはこれらの操作能力に含めません。
