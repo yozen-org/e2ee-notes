@@ -1,8 +1,8 @@
 import FlutterMacOS
 import Foundation
 
-import hardware_keys
+import secure_keys
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  HardwareKeysPlugin.register(with: registry.registrar(forPlugin: "HardwareKeysPlugin"))
+  SecureKeysPlugin.register(with: registry.registrar(forPlugin: "SecureKeysPlugin"))
 }

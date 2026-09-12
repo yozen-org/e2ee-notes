@@ -94,8 +94,8 @@ Apple・TPMのどちらでも、復元できない鍵の代わりに別のKを�
 
 ## 鍵の操作能力の契約
 
-`packages/hardware_keys/lib/secure_keys/`には、Vaultに依存しない以下のインターフェースを定義しています。
-`package:hardware_keys/secure_keys.dart`からまとめてインポートできます。
+`packages/secure_keys/lib/src/`には、Vaultに依存しない以下のインターフェースを定義しています。
+`package:secure_keys/secure_keys.dart`からまとめてインポートできます。
 現段階では契約のみで、既存のStorageやネイティブ実装への接続は行っていません。
 
 | インターフェース | 操作 |
@@ -113,3 +113,8 @@ Apple・TPMのどちらでも、復元できない鍵の代わりに別のKを�
 鍵生成の戻り値Kは鍵を操作するオブジェクトを想定し、秘密鍵の生バイト列の取得を要求しません。
 アルゴリズムや署名・暗号文・公開鍵の符号化形式は、実装を接続する際に対応する鍵型の契約として定めます。
 鍵の再取得、永続化、Vaultの組み立てはこれらの操作能力に含めません。
+
+公開APIは`secure_keys.dart`（操作能力）、`secure_enclave.dart`（既存のSecure Enclave接続）、
+`tpm.dart`（既存のTPM接続）から参照します。
+各方式のDart実装は`src/secure_enclave/`と`src/tpm/`に配置しています。
+ネイティブ実装はFlutterプラグインの規約に従い、各OSのディレクトリに配置します。

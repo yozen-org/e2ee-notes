@@ -15,8 +15,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   e2ee_core:
     path: ../packages/e2ee_core
-  hardware_keys:
-    path: ../packages/hardware_keys
+  secure_keys:
+    path: ../packages/secure_keys
   notes_repository:
     path: ../packages/notes_repository
   path_provider: ^2.1.5

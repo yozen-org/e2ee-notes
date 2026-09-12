@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:hardware_keys/hardware_keys.dart';
+import 'package:secure_keys/secure_enclave.dart';
 import 'package:path/path.dart' as p;
 
 import '../vault_key_files/recipient_key_handle_file.dart';
@@ -15,7 +15,7 @@ final class SecureEnclaveVaultKeyStorage implements VaultKeyStorage {
   SecureEnclaveVaultKeyStorage(this.root, this.hardwareKeys);
 
   final Directory root;
-  final HardwareKeys hardwareKeys;
+  final SecureEnclaveKeys hardwareKeys;
 
   @override
   Future<bool> exists() async {

@@ -6,7 +6,7 @@ import 'package:e2ee_notes/src/vault_key_provider.dart';
 import 'package:e2ee_notes/src/vault_key_storage/plaintext_file_vault_key_storage.dart';
 import 'package:e2ee_notes/src/vault_key_storage/tpm_vault_key_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hardware_keys/tpm_keys.dart';
+import 'package:secure_keys/tpm.dart';
 import 'package:path/path.dart' as p;
 
 final class FakeTpmKeys implements TpmKeys {

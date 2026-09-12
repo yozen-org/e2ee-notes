@@ -17,7 +17,7 @@ packages/e2ee_core/          platform-neutral encrypted data model
 packages/notes_repository/   encrypted operation log and note projection
 packages/storage_api/        minimal blob-store contract
 packages/storage_filesystem/ first local storage adapter
-packages/hardware_keys/      federated native hardware-key plugin
+packages/secure_keys/        key capabilities and native key adapters
 spec/                        versioned protocols and test vectors
 docs/                        architecture, threat model, and roadmap
 ```

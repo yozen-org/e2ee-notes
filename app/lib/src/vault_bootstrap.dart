@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:hardware_keys/hardware_keys.dart';
-import 'package:hardware_keys/method_channel_tpm_keys.dart';
+import 'package:secure_keys/secure_enclave.dart';
+import 'package:secure_keys/tpm.dart';
 import 'package:notes_repository/notes_repository.dart';
 
 import 'local_vault.dart';
@@ -17,7 +17,7 @@ VaultKeyProvider _createKeyProvider(Directory root) {
   final plaintext = PlaintextFileVaultKeyStorage(root);
   return switch (Platform.operatingSystem) {
     'macos' || 'ios' => VaultKeyProvider(
-      storage: SecureEnclaveVaultKeyStorage(root, HardwareKeys()),
+      storage: SecureEnclaveVaultKeyStorage(root, SecureEnclaveKeys()),
       migrationSource: plaintext,
     ),
     'windows' || 'linux' => VaultKeyProvider(

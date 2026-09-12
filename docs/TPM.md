@@ -10,12 +10,12 @@ TPM 2.0がない端末では従来のソフトウェア鍵を使用します。
 - `app/lib/src/vault_key_provider.dart`：全保存方式に共通の鍵の復元・移行・新規作成。
 - `app/lib/src/vault_key_storage/tpm_vault_key_storage.dart`：TPMによるKの保護・復元と保存。
 - `app/lib/src/vault_key_files/tpm_protected_key_file.dart`：保護済み鍵の保存。
-- `packages/hardware_keys/lib/tpm_keys.dart`：TPMによる鍵の保護・復元の契約。
-- `packages/hardware_keys/lib/method_channel_tpm_keys.dart`：Flutterからネイティブ実装への接続。
-- `packages/hardware_keys/windows/tpm_key_store.cpp`：WindowsのCNGによる鍵のラップ。
-- `packages/hardware_keys/linux/tpm_key_store.cc`：LinuxのTPM 2.0によるseal・unseal。
-- `packages/hardware_keys/linux/tpm_context.cc`：TPMへの接続とリソースの解放。
-- `packages/hardware_keys/linux/tpm_sealed_blob.cc`：TPMの保存データの直列化。
+- `packages/secure_keys/lib/src/tpm/tpm_keys.dart`：TPMによる鍵の保護・復元の契約。
+- `packages/secure_keys/lib/src/tpm/method_channel_tpm_keys.dart`：Flutterからネイティブ実装への接続。
+- `packages/secure_keys/windows/tpm_key_store.cpp`：WindowsのCNGによる鍵のラップ。
+- `packages/secure_keys/linux/tpm_key_store.cc`：LinuxのTPM 2.0によるseal・unseal。
+- `packages/secure_keys/linux/tpm_context.cc`：TPMへの接続とリソースの解放。
+- `packages/secure_keys/linux/tpm_sealed_blob.cc`：TPMの保存データの直列化。
 
 ## 鍵を開く流れ
 
@@ -83,7 +83,7 @@ Dartのテストは、TPMの境界だけをFakeに置き換え、実際のProvid
 ネイティブの検証用実行ファイルはFlutterなしでもビルドできます。
 
 ```sh
-cmake -S packages/hardware_keys/native_test -B build/tpm-tests
+cmake -S packages/secure_keys/native_test -B build/tpm-tests
 cmake --build build/tpm-tests --config Debug
 ctest --test-dir build/tpm-tests -C Debug --output-on-failure
 ```

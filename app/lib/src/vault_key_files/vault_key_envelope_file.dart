@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:hardware_keys/hardware_keys.dart';
+import 'package:secure_keys/secure_enclave.dart';
 import 'package:path/path.dart' as p;
 
 final class VaultKeyEnvelopeFile {

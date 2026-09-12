@@ -1,5 +1,5 @@
 list(APPEND FLUTTER_PLUGIN_LIST
-  hardware_keys
+  secure_keys
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

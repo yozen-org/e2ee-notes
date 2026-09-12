@@ -19,7 +19,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libtss2-dev libtpms0
       - name: Configure
-        run: cmake -S packages/hardware_keys/native_test -B build/tpm-tests
+        run: cmake -S packages/secure_keys/native_test -B build/tpm-tests
       - name: Build
         run: cmake --build build/tpm-tests --config Debug
       - name: Test input validation

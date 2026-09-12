@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:hardware_keys/tpm_keys.dart';
+import 'package:secure_keys/tpm.dart';
 
 import '../vault_key_files/recipient_key_handle_file.dart';
 import '../vault_key_files/tpm_protected_key_file.dart';
