@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:e2ee_notes/main.dart';
+import 'package:e2ee_notes/app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:notes_repository/notes_repository.dart';
-import 'package:storage_api/storage_api.dart';
+import 'package:e2ee_notes/notes/notes_repository.dart';
+import 'package:e2ee_notes/storage/storage_api.dart';
 
 final class MemoryStore implements BlobStore {
   final objects = <String, Uint8List>{};

@@ -13,14 +13,19 @@ This repository starts cleanly from lessons learned in `lab-keybridge` and
 
 ```text
 app/                         Flutter application for five platforms
-packages/e2ee_core/          platform-neutral encrypted data model
-packages/notes_repository/   encrypted operation log and note projection
-packages/storage_api/        minimal blob-store contract
-packages/storage_filesystem/ first local storage adapter
+app/lib/crypto/              encrypted data model and operation cipher
+app/lib/notes/               notes UI, encrypted operation log and projection
+app/lib/vault/               vault initialization and key persistence
+app/lib/storage/             blob-store contract and filesystem adapter
+app/test/                    application and component tests
 packages/secure_keys/        key capabilities and native key adapters
 spec/                        versioned protocols and test vectors
 docs/                        architecture, threat model, and roadmap
 ```
+
+Application code lives in responsibility-based folders under `app/lib`.
+Extract a package when a stable API and a clear dependency boundary emerge.
+`secure_keys` remains separate because it is a native Flutter plugin.
 
 ## Development
 

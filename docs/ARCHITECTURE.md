@@ -61,7 +61,7 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 
 ## 起動時の依存関係の組み立て
 
-`app/lib/src/vault_bootstrap.dart`のswitch式でOSに応じた`VaultKeySelector`を選びます。
+`app/lib/vault/vault_bootstrap.dart`のswitch式でOSに応じた`VaultKeySelector`を選びます。
 `LocalVault`は`keySelectorFactory`を受け取り、保存ディレクトリを準備してから
 Selectorの`select()`で`VaultKeyService`を組み立てます。
 
@@ -75,7 +75,7 @@ vault_bootstrap → OSに対応するVaultKeySelector
                      └─ 移行元のPlaintextVaultKeyRepository（必要な場合）
 ```
 
-`app/lib/src/vault_key_selection/`の各Selectorが、保存済みの鍵参照と端末の利用可否を判断します。
+`app/lib/vault/vault_key_selection/`の各Selectorが、保存済みの鍵参照と端末の利用可否を判断します。
 Secure EnclaveのCapabilitiesとTPMの`isAvailable()`はこの段階で使い、Serviceへ渡しません。
 既存の保護鍵を優先し、その復元に失敗しても平文保存へ切り替えません。
 不完全なApple鍵ファイルや別方式の保護鍵があれば、鍵を生成せずエラーにします。
@@ -95,7 +95,7 @@ OS、Capabilities、ハンドル、エンベロープの形式を知りません
 署名は現在のVaultの処理で使わないため、`SigningKey`は依存に含めません。
 平文保存は明示的な`VaultKeyService.plaintext`で構成し、暗号化したことにはしません。
 
-`app/lib/src/vault_key_repository/`は保存形式ごとの読み書きを担当します。
+`app/lib/vault/vault_key_repository/`は保存形式ごとの読み書きを担当します。
 共通契約は`exists()`・`read()`・`write(bytes)`だけで、暗号操作や利用可否判定は含みません。
 保護用Repositoryが受け取るのは暗号化済みバイト列です。
 Secure Enclave用はハンドル・エンベロープ・公開鍵ドキュメント、TPM用は保護済みblobを保存します。

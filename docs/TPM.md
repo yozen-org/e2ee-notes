@@ -8,12 +8,12 @@ TPM 2.0がない端末では従来のソフトウェア鍵を使用します。
 
 ## コードの配置
 
-- `app/lib/src/vault_key_selection/tpm_vault_key_selector.dart`：保存状態とTPMの利用可否に基づく選択。
-- `app/lib/src/vault_key_service.dart`：全保存方式に共通の鍵の復元・移行・新規作成。
-- `app/lib/src/vault_key_repository/tpm_vault_key_repository.dart`：保護済みKの読み書き。
+- `app/lib/vault/vault_key_selection/tpm_vault_key_selector.dart`：保存状態とTPMの利用可否に基づく選択。
+- `app/lib/vault/vault_key_service.dart`：全保存方式に共通の鍵の復元・移行・新規作成。
+- `app/lib/vault/vault_key_repository/tpm_vault_key_repository.dart`：保護済みKの読み書き。
 - `packages/secure_keys/lib/src/tpm/tpm_encryption_key.dart`：`EncryptionKey`としてTPMの保護操作を公開。
 - `packages/secure_keys/lib/src/tpm/tpm_decryption_key.dart`：`DecryptionKey`としてTPMの復元操作を公開。
-- `app/lib/src/vault_key_files/tpm_protected_key_file.dart`：保護済み鍵の保存。
+- `app/lib/vault/vault_key_files/tpm_protected_key_file.dart`：保護済み鍵の保存。
 - `packages/secure_keys/lib/src/tpm/tpm_keys.dart`：TPMによる鍵の保護・復元の契約。
 - `packages/secure_keys/lib/src/tpm/method_channel_tpm_keys.dart`：Flutterからネイティブ実装への接続。
 - `packages/secure_keys/windows/tpm_key_store.cpp`：WindowsのCNGによる鍵のラップ。

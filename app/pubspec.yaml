@@ -8,22 +8,15 @@ environment:
   sdk: ^3.13.0
 
 dependencies:
+  cryptography: ^2.9.0
   path: ^1.9.1
   flutter:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  e2ee_core:
-    path: ../packages/e2ee_core
   secure_keys:
     path: ../packages/secure_keys
-  notes_repository:
-    path: ../packages/notes_repository
   path_provider: ^2.1.5
-  storage_api:
-    path: ../packages/storage_api
-  storage_filesystem:
-    path: ../packages/storage_filesystem
 
 dev_dependencies:
   flutter_test:

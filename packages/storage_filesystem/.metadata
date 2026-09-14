@@ -1,5 +1,0 @@
-version:
-  revision: "nixpkgs000000000000000000000000000000000"
-  channel: "stable"
-
-project_type: package
