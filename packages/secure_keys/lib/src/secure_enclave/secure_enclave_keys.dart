@@ -1,3 +1,10 @@
+import '../recipient_public_key.dart';
+import '../recipient_key.dart';
+import '../vault_key_envelope.dart';
+export '../recipient_public_key.dart';
+export '../recipient_key.dart';
+export '../vault_key_envelope.dart';
+
 import 'dart:typed_data';
 
 import 'secure_enclave_keys_platform_interface.dart';
@@ -19,74 +26,6 @@ final class HardwareKeyCapabilities {
   final bool available;
   final bool hardwareBacked;
   final String provider;
-}
-
-final class RecipientPublicKey {
-  const RecipientPublicKey({
-    required this.version,
-    required this.suite,
-    required this.keyId,
-    required this.publicKey,
-  });
-
-  factory RecipientPublicKey.fromMap(Map<Object?, Object?> map) =>
-      RecipientPublicKey(
-        version: map['version'] as int,
-        suite: map['suite'] as String,
-        keyId: map['keyID'] as String,
-        publicKey: map['publicKey'] as String,
-      );
-
-  final int version;
-  final String suite;
-  final String keyId;
-  final String publicKey;
-
-  Map<String, Object> toMap() => {
-    'version': version,
-    'suite': suite,
-    'keyID': keyId,
-    'publicKey': publicKey,
-  };
-}
-
-final class RecipientKey {
-  const RecipientKey({required this.handle, required this.publicKey});
-  final Uint8List handle;
-  final RecipientPublicKey publicKey;
-}
-
-final class VaultKeyEnvelope {
-  const VaultKeyEnvelope({
-    required this.version,
-    required this.suite,
-    required this.recipientKeyId,
-    required this.ephemeralPublicKey,
-    required this.sealedKey,
-  });
-
-  factory VaultKeyEnvelope.fromMap(Map<Object?, Object?> map) =>
-      VaultKeyEnvelope(
-        version: map['version'] as int,
-        suite: map['suite'] as String,
-        recipientKeyId: map['recipientKeyID'] as String,
-        ephemeralPublicKey: map['ephemeralPublicKey'] as String,
-        sealedKey: map['sealedKey'] as String,
-      );
-
-  final int version;
-  final String suite;
-  final String recipientKeyId;
-  final String ephemeralPublicKey;
-  final String sealedKey;
-
-  Map<String, Object> toMap() => {
-    'version': version,
-    'suite': suite,
-    'recipientKeyID': recipientKeyId,
-    'ephemeralPublicKey': ephemeralPublicKey,
-    'sealedKey': sealedKey,
-  };
 }
 
 class SecureEnclaveKeys {

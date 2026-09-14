@@ -46,11 +46,11 @@ E2EEコアは、バージョン付きの平文モデル、認証付き暗号化�
 アプリの初期化処理では、プラットフォームのアプリケーションサポートディレクトリに、
 保管庫の鍵と端末IDを用意します。Secure Enclaveを備えたApple端末では、
 保護済みの鍵があれば復元し、既存のソフトウェア鍵があれば同じ鍵を保護する形に移行します。
-どちらもなければ、鍵をメモリ上で生成します。受信者鍵ハンドルと鍵エンベロープを保存し、
+どちらもなければ、鍵をメモリ上で生成します。受信者鍵ハンドルと鍵エンベロープを含むレコードを保存し、
 新規の鍵を平文ファイルには書き込みません。移行時は鍵の保護・検証・保存が完了した後、
 元のソフトウェア鍵ファイルを削除します。WindowsとLinuxではTPM 2.0でKを保護します。
 TPMがない端末と、ハードウェアアダプターが未実装のプラットフォームでは、
-ソフトウェア鍵へのフォールバックを引き続き使用します。
+ユーザーの確認を経てソフトウェア鍵を保存します。
 TPMで保護済みの鍵が復元できない場合は、フォールバックせず停止します。
 設定と制約は[TPM対応](TPM.md)を参照してください。
 ストレージプロバイダーのルートに当たるのは、`storage/`サブディレクトリだけです。
@@ -59,95 +59,48 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 既存オブジェクトが変更されないことを保証します。並行して同期処理を行う前に、
 複数プロセス間での原子的な作成と、プロバイダー側での条件付き書き込みに対応する必要があります。
 
-## 起動時の依存関係の組み立て
-
-`app/lib/vault/vault_bootstrap.dart`のswitch式でOSに応じた`VaultKeySelector`を選びます。
-`LocalVault`は`keySelectorFactory`を受け取り、保存ディレクトリを準備してから
-Selectorの`select()`で`VaultKeyService`を組み立てます。
+## Vault 鍵の契約
 
 ```text
-vault_bootstrap → OSに対応するVaultKeySelector
-                         ↓ select()
-                   VaultKeyService
-                     ├─ EncryptionKey
-                     ├─ DecryptionKey
-                     ├─ VaultKeyRepository
-                     └─ 移行元のPlaintextVaultKeyRepository（必要な場合）
+VaultLauncher（保存の確認・方針指定）
+  → LocalVault
+      → VaultKeyService
+          ├─ SecureKey → PlatformSecureKey → OS の実装
+          └─ VaultKeyStorage → FileVaultKeyStorage
+      → EncryptedNotesRepository（返された Vault 鍵を使用）
 ```
 
-`app/lib/vault/vault_key_selection/`の各Selectorが、保存済みの鍵参照と端末の利用可否を判断します。
-Secure EnclaveのCapabilitiesとTPMの`isAvailable()`はこの段階で使い、Serviceへ渡しません。
-既存の保護鍵を優先し、その復元に失敗しても平文保存へ切り替えません。
-不完全なApple鍵ファイルや別方式の保護鍵があれば、鍵を生成せずエラーにします。
-平文用Selectorも保護鍵ファイルを確認し、未対応OSで別のKを作ることを防ぎます。
+`secure_keys` がハードウェアの選択、能力確認、鍵の生成・保護・復元、
+保存形式の解釈を担当します。アプリは `SecureKey` の共通契約を使います。
+`generate` と `protect` は Vault 鍵と保存用の `KeyRecord` を返し、
+`open` は既存レコードから同じ32バイトの Vault 鍵を返します。
+既存の保護済み鍵を開けない場合は停止し、新しい鍵の生成やソフトウェアへの切替は行いません。
 
-Secure Enclaveでは、保存済みハンドルから`openRecipientKey`で同じ鍵を再取得します。
-公開鍵はハンドルからネイティブ側で導くため、既存の`recipient-public.json`がなくても復元できます。
-新規作成時だけ受信者鍵を生成し、公開鍵側と秘密鍵側の操作をServiceに渡します。
-TPMでは既存のネイティブ接続を使う暗号化・復号アダプターを渡します。
-Windowsの永続鍵の取得とLinuxのストレージ親鍵の再構成は、引き続きネイティブ実装が担当します。
+`VaultKeyStorage` の契約は `read` と `save` だけです。
+`FileVaultKeyStorage` は内容を解釈せず、`vault-key.json` へレコードを保存します。
+同じディレクトリ内で一時ファイルに書き、flush 後に rename します。
+`VaultKeyService` は生成・保護直後と、保存したレコードの再読込後に復元を検証します。
+ノートの暗号化は引き続き `app/lib/crypto` が担当します。
+Vault 鍵はアプリのメモリに存在し、ハードウェア内に閉じ込める設計ではありません。
 
-## 鍵の操作・保存・ライフサイクルの境界
+新規保存とソフトウェア鍵のハードウェア保護への変更は、アプリの確認画面を通します。
+`KeyPolicy` はソフトウェア方式を許すか、鍵利用時のユーザー認証を要求するかを明示します。
+現在の画面は保存への同意を求めます。鍵利用ごとの認証を必須にする設定 UI はありません。
 
-`VaultKeyService`は32バイトのKの生成・復元・平文鍵からの移行を担当します。
-OS、Capabilities、ハンドル、エンベロープの形式を知りません。
-保護する場合は`EncryptionKey`と`DecryptionKey`の両方を必須で受け取ります。
-署名は現在のVaultの処理で使わないため、`SigningKey`は依存に含めません。
-平文保存は明示的な`VaultKeyService.plaintext`で構成し、暗号化したことにはしません。
+## 旧形式の読み込み
 
-`app/lib/vault/vault_key_repository/`は保存形式ごとの読み書きを担当します。
-共通契約は`exists()`・`read()`・`write(bytes)`だけで、暗号操作や利用可否判定は含みません。
-保護用Repositoryが受け取るのは暗号化済みバイト列です。
-Secure Enclave用はハンドル・エンベロープ・公開鍵ドキュメント、TPM用は保護済みblobを保存します。
-ファイル名と保存形式は従来どおりです。
+`LegacyVaultKeyMigration` が旧ファイルを読み、`secure_keys` の
+`importLegacyKeyRecord` に解釈を任せます。通常の Service に移行元 Repository はありません。
+既存データは同じ Vault 鍵でレコードへ移し、保存・復元後に一致を確認します。
+旧形式の保護済みファイルは残します。旧平文の `vault-key.bin` は、新レコードが
+ハードウェアで保護され、同じ鍵と確認できた場合のみ削除します。
+移行が途中で失敗した場合も元の鍵を保持し、再実行できます。
+欠損・異なる方式の混在・異なる平文鍵がある場合は停止します。
 
-Serviceは暗号化直後に復号してKの一致を確認し、保存後にも読み直して再度復号・検証します。
-移行元の平文ファイルは、これらの検証と元ファイルとの一致確認に成功してから削除します。
-保存後に終了して平文鍵が残った場合も、次回の復元時に同じ確認を行います。
+## 共有
 
-テストでは本番と同じSelector・Service・Repositoryを通し、ネイティブ接続を代替実装へ差し替えます。
-Service単体のテストでは操作能力とRepositoryを差し替え、保存先に暗号文が渡ることや
-保存後の検証に失敗した際に移行元を残すことを確認します。
-
-## 鍵の操作能力の契約
-
-`packages/secure_keys/lib/src/`には、Vaultに依存しない以下のインターフェースを定義しています。
-`package:secure_keys/secure_keys.dart`からまとめてインポートできます。
-現在のVaultでは`EncryptionKey`と`DecryptionKey`を使います。
-残りの操作能力は契約のみで、署名・検証などの実装は追加していません。
-
-| インターフェース | 操作 |
-| --- | --- |
-| `KeyGenerator<K>` | `generate()`で型Kの鍵オブジェクトを生成する |
-| `SigningKey` | `sign(message)`でメッセージに署名する |
-| `VerificationKey` | `verify(message: ..., signature: ...)`で署名を検証する |
-| `DecryptionKey` | `decrypt(ciphertext)`で復号する |
-| `EncryptionKey` | `encrypt(plaintext)`で暗号化する |
-| `KeyAgreementKey` | `deriveSharedSecret(encodedPeerPublicKey)`で共有秘密を導く |
-
-各操作は非同期で、メッセージ・署名・暗号文・共有秘密は`Uint8List`で受け渡します。
-署名・検証の入力は事前計算したダイジェストではなくメッセージです。
-署名が一致しない場合は`false`、接続や権限などの操作失敗は例外で伝えます。
-鍵生成の戻り値Kは鍵を操作するオブジェクトを想定し、秘密鍵の生バイト列の取得を要求しません。
-アルゴリズムや署名・暗号文・公開鍵の符号化形式は、実装を接続する際に対応する鍵型の契約として定めます。
-鍵の再取得、永続化、Vaultの組み立てはこれらの操作能力に含めません。
-
-公開APIは`secure_keys.dart`（操作能力）、`secure_enclave.dart`（既存のSecure Enclave接続）、
-`tpm.dart`（既存のTPM接続）から参照します。
-各方式のDart実装は`src/secure_enclave/`と`src/tpm/`に配置しています。
-ネイティブ実装はFlutterプラグインの規約に従い、各OSのディレクトリに配置します。
-
-## 現在接続している暗号操作の範囲
-
-`SecureEnclaveEncryptionKey`・`SecureEnclaveDecryptionKey`は既存の
-`wrapVaultKey`・`unwrapVaultKey`へのアダプターです。
-入力平文は32バイト、暗号文は従来のエンベロープJSONのUTF-8バイト列です。
-暗号スイートは`P256-HKDF-SHA256-AES256GCM`で、暗号化は受信者公開鍵を使い、
-復号は選択済みのSecure Enclave鍵ハンドルを使います。
-
-`TpmEncryptionKey`・`TpmDecryptionKey`も入力平文は32バイトです。
-Windowsでは既存のRSA-OAEPによるラップ、Linuxでは既存のseal・unsealを使います。
-暗号文はOS固有の保護済みblobで、Windows・Linux間の相互復号には対応しません。
-Linuxのsealを公開鍵暗号や鍵共有として公開しているわけではありません。
-これらは現在のKの保護に必要な操作を接続したもので、任意長のメッセージ暗号化や
-任意の鍵を選ぶ汎用ネイティブAPIへの拡張は行っていません。
+`publicKey` で取得した受信側の公開鍵に対し、`envelope` が Vault 鍵を包みます。
+`accept` は受信側のレコードで復号し、その端末で保存可能なレコードと Vault 鍵を返します。
+公開鍵の確認・配送・保存はアプリの責務です。現在のノート画面には共有 UI はありません。
+Secure Enclave の既存暗号方式を利用し、TPM は現在のローカル保存機能のみを提供します。
+TPM の共有・ユーザー認証は能力として未対応を返します。

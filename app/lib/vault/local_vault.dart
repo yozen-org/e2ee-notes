@@ -6,12 +6,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:e2ee_notes/storage/storage_filesystem.dart';
 
 import 'read_or_create_random_bytes.dart';
-import 'vault_key_selection/vault_key_selector.dart';
+
+import 'package:secure_keys/secure_keys.dart';
+
+import 'file_vault_key_storage.dart';
+import 'legacy_vault_key_migration.dart';
+import 'vault_key_service.dart';
 
 final class LocalVault {
-  const LocalVault({required this.keySelectorFactory});
+  const LocalVault({required this.secureKey, required this.requestPolicy});
 
-  final VaultKeySelector Function(Directory root) keySelectorFactory;
+  final SecureKey secureKey;
+  final RequestKeyPolicy requestPolicy;
 
   Future<EncryptedNotesRepository> open() async {
     final support = await getApplicationSupportDirectory();
@@ -20,8 +26,15 @@ final class LocalVault {
 
   Future<EncryptedNotesRepository> openAt(Directory root) async {
     await root.create(recursive: true);
-    final keyService = await keySelectorFactory(root).select();
+    final storage = FileVaultKeyStorage(root);
+    await LegacyVaultKeyMigration(root, secureKey).migrateTo(storage);
+    final keyService = VaultKeyService(
+      secureKey: secureKey,
+      storage: storage,
+      requestPolicy: requestPolicy,
+    );
     final vaultKey = await keyService.openKey();
+    await LegacyVaultKeyMigration(root, secureKey).migrateTo(storage);
 
     final deviceIdBytes = await readOrCreateRandomBytes(
       File(p.join(root.path, 'device-id.bin')),
