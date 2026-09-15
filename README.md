@@ -29,12 +29,29 @@ Extract a package when a stable API and a clear dependency boundary emerge.
 
 ## Development
 
+Enter the reproducible development shell and verify the Flutter packages:
+
 ```sh
-nix shell nixpkgs#flutter
+nix develop
 cd app
 flutter analyze
 flutter test
-flutter run -d macos
+```
+
+Build an Android debug APK with:
+
+```sh
+flutter build apk --debug
+```
+
+The APK is written to `app/build/app/outputs/flutter-apk/app-debug.apk`.
+Android 11 or later can connect to this headless development machine through
+Wireless debugging:
+
+```sh
+adb pair DEVICE_ADDRESS:PAIRING_PORT
+adb connect DEVICE_ADDRESS:DEBUG_PORT
+flutter run -d DEVICE_ID
 ```
 
 The app stores encrypted immutable operations in the platform's
