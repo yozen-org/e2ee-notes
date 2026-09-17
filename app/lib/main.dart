@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:secure_keys/secure_keys.dart';
 
 import 'app.dart';
-import 'vault/vault_launcher.dart';
+import 'vault/local_vault.dart';
 
-void main() => runApp(const E2eeNotesApp(home: VaultLauncher()));
+void main() {
+  runApp(
+    E2eeNotesApp(
+      openVault: (requestPolicy) => LocalVault(
+        secureKey: PlatformSecureKey(),
+        requestPolicy: requestPolicy,
+      ).open(),
+    ),
+  );
+}

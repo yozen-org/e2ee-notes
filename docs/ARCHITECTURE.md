@@ -62,8 +62,9 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 ## Vault 鍵の契約
 
 ```text
-VaultLauncher（保存の確認・方針指定）
-  → LocalVault
+main（本番依存の組み立て）
+  ├─ E2eeNotesApp → VaultGate（保存の確認・方針指定）
+  └─ VaultOpener → LocalVault
       → VaultKeyService
           ├─ SecureKey → PlatformSecureKey → OS の実装
           └─ VaultKeyStorage → FileVaultKeyStorage

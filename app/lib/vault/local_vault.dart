@@ -11,6 +11,7 @@ import 'package:secure_keys/secure_keys.dart';
 
 import 'file_vault_key_storage.dart';
 import 'legacy_vault_key_migration.dart';
+import 'request_key_policy.dart';
 import 'vault_key_service.dart';
 
 final class LocalVault {

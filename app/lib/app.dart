@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
-class E2eeNotesApp extends StatelessWidget {
-  const E2eeNotesApp({required this.home, super.key});
+import 'vault/vault_gate.dart';
+import 'vault/vault_opener.dart';
 
-  final Widget home;
+class E2eeNotesApp extends StatelessWidget {
+  const E2eeNotesApp({required this.openVault, super.key});
+
+  final VaultOpener openVault;
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +17,7 @@ class E2eeNotesApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff395b64)),
         useMaterial3: true,
       ),
-      home: home,
+      home: VaultGate(openVault: openVault),
     );
   }
 }

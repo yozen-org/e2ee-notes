@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
-import 'package:e2ee_notes/vault/vault_launcher.dart';
+import 'package:e2ee_notes/vault/vault_gate.dart';
 import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
 
 import '../widget_test.dart' show MemoryStore;
@@ -17,7 +17,7 @@ void main() {
       KeyPolicy? policy;
       await tester.pumpWidget(
         MaterialApp(
-          home: VaultLauncher(
+          home: VaultGate(
             openVault: (requestPolicy) async {
               policy = await requestPolicy(
                 KeyCapabilities(

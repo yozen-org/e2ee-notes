@@ -2,12 +2,9 @@ import 'dart:typed_data';
 
 import 'package:secure_keys/secure_keys.dart';
 
+import 'request_key_policy.dart';
 import 'vault_key_storage.dart';
 import 'vault_key_validation.dart';
-
-typedef RequestKeyPolicy = Future<KeyPolicy> Function(
-  KeyCapabilities capabilities,
-);
 
 final class VaultKeyService {
   const VaultKeyService({

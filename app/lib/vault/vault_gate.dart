@@ -3,17 +3,18 @@ import 'package:secure_keys/secure_keys.dart';
 
 import '../notes/notes_home_page.dart';
 import '../notes/encrypted_notes_repository.dart';
-import 'local_vault.dart';
-import 'vault_key_service.dart';
+import 'vault_opener.dart';
 
-class VaultLauncher extends StatefulWidget {
-  const VaultLauncher({this.openVault, super.key});
-  final Future<EncryptedNotesRepository> Function(RequestKeyPolicy)? openVault;
+class VaultGate extends StatefulWidget {
+  const VaultGate({required this.openVault, super.key});
+
+  final VaultOpener openVault;
+
   @override
-  State<VaultLauncher> createState() => _VaultLauncherState();
+  State<VaultGate> createState() => _VaultGateState();
 }
 
-class _VaultLauncherState extends State<VaultLauncher> {
+class _VaultGateState extends State<VaultGate> {
   Future<EncryptedNotesRepository>? _repository;
 
   @override
@@ -25,12 +26,7 @@ class _VaultLauncherState extends State<VaultLauncher> {
   }
 
   void _open() => setState(() {
-    _repository =
-        widget.openVault?.call(_requestPolicy) ??
-        LocalVault(
-          secureKey: PlatformSecureKey(),
-          requestPolicy: _requestPolicy,
-        ).open();
+    _repository = widget.openVault(_requestPolicy);
   });
 
   Future<KeyPolicy> _requestPolicy(KeyCapabilities capabilities) async {
