@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/app.dart';
+import 'package:e2ee_notes/notes/notes_home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
@@ -33,7 +34,9 @@ void main() {
       vaultKey: Uint8List(32),
       deviceId: 'a' * 64,
     );
-    await tester.pumpWidget(E2eeNotesApp(repository: Future.value(repository)));
+    await tester.pumpWidget(
+      E2eeNotesApp(home: NotesHomePage(repository: Future.value(repository))),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Your notes, your keys, your storage.'), findsOneWidget);
