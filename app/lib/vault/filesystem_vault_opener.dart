@@ -14,8 +14,11 @@ import 'legacy_vault_key_migration.dart';
 import 'request_key_policy.dart';
 import 'vault_key_service.dart';
 
-final class LocalVault {
-  const LocalVault({required this.secureKey, required this.requestPolicy});
+final class FilesystemVaultOpener {
+  const FilesystemVaultOpener({
+    required this.secureKey,
+    required this.requestPolicy,
+  });
 
   final SecureKey secureKey;
   final RequestKeyPolicy requestPolicy;

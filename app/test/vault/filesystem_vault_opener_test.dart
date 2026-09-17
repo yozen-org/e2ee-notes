@@ -7,7 +7,7 @@ import 'package:secure_keys/secure_keys.dart';
 import 'package:secure_keys/src/secure_enclave/secure_enclave_secure_key.dart';
 import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
-import 'package:e2ee_notes/vault/local_vault.dart';
+import 'package:e2ee_notes/vault/filesystem_vault_opener.dart';
 import 'package:e2ee_notes/vault/file_vault_key_storage.dart';
 
 import '../../../packages/secure_keys/test/support/fake_tpm_keys.dart';
@@ -24,7 +24,8 @@ void main() {
   }
 
   File file(String name) => File('${root.path}/$name');
-  LocalVault vault() => LocalVault(secureKey: keys, requestPolicy: permit);
+  FilesystemVaultOpener vault() =>
+      FilesystemVaultOpener(secureKey: keys, requestPolicy: permit);
   Future<Uint8List> open() async {
     await vault().openAt(root);
     return keys.open((await FileVaultKeyStorage(root).read())!);
@@ -52,7 +53,7 @@ void main() {
     expect(tpm.keys, hasLength(1));
   });
   test('cancelled permission does not generate or persist a key', () async {
-    final cancelled = LocalVault(
+    final cancelled = FilesystemVaultOpener(
       secureKey: keys,
       requestPolicy: (_) async => throw StateError('cancelled'),
     );
