@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'notes/notes_home_page.dart';
-import 'notes/notes_repository.dart';
+import 'notes/encrypted_notes_repository.dart';
 import 'vault/vault_launcher.dart';
 
 class E2eeNotesApp extends StatelessWidget {

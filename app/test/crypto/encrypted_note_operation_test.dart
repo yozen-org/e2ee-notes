@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
-import 'package:e2ee_notes/crypto/e2ee_core.dart';
+import 'package:e2ee_notes/crypto/encrypted_note_operation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 

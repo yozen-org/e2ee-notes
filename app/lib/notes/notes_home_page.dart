@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'notes_repository.dart';
+import 'encrypted_notes_repository.dart';
 
 class NotesHomePage extends StatefulWidget {
   const NotesHomePage({required this.repository, super.key});

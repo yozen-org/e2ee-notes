@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:e2ee_notes/crypto/e2ee_core.dart';
-import 'package:e2ee_notes/storage/storage_api.dart';
+import 'package:e2ee_notes/crypto/encrypted_note_operation.dart';
+import 'package:e2ee_notes/storage/blob_store.dart';
 
 final class NoteRecord {
   const NoteRecord({
@@ -104,7 +104,7 @@ final class EncryptedNotesRepository {
       title: title,
       body: body,
     );
-    await _write(operation);
+    await _appendEncryptedOperation(operation);
     return NoteRecord(
       id: actualNoteId,
       title: title,
@@ -116,7 +116,7 @@ final class EncryptedNotesRepository {
   Future<void> delete(String noteId) async {
     await loadNotes();
     _requireIdentifier(noteId, 'noteId');
-    await _write(
+    await _appendEncryptedOperation(
       NoteOperation(
         operationId: _identifier(),
         noteId: noteId,
@@ -157,7 +157,7 @@ final class EncryptedNotesRepository {
     return operations;
   }
 
-  Future<void> _write(NoteOperation operation) async {
+  Future<void> _appendEncryptedOperation(NoteOperation operation) async {
     final encrypted = await _cipher.encrypt(
       operation: operation,
       vaultKey: _vaultKey,

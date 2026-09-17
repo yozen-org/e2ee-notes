@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
 import 'package:e2ee_notes/vault/vault_launcher.dart';
-import 'package:e2ee_notes/notes/notes_repository.dart';
+import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
 
 import '../widget_test.dart' show MemoryStore;
 

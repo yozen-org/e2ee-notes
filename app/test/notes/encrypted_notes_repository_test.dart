@@ -3,8 +3,8 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:e2ee_notes/notes/notes_repository.dart';
-import 'package:e2ee_notes/storage/storage_api.dart';
+import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
+import 'package:e2ee_notes/storage/blob_store.dart';
 
 final class MemoryStore implements BlobStore {
   final objects = <String, Uint8List>{};

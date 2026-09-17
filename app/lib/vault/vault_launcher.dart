@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
 import '../notes/notes_home_page.dart';
-import '../notes/notes_repository.dart';
+import '../notes/encrypted_notes_repository.dart';
 import 'local_vault.dart';
 import 'vault_key_service.dart';
 

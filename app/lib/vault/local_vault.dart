@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:e2ee_notes/notes/notes_repository.dart';
+import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:e2ee_notes/storage/storage_filesystem.dart';
+import 'package:e2ee_notes/storage/filesystem_blob_store.dart';
 
 import 'read_or_create_random_bytes.dart';
 
@@ -33,7 +33,7 @@ final class LocalVault {
       storage: storage,
       requestPolicy: requestPolicy,
     );
-    final vaultKey = await keyService.openKey();
+    final vaultKey = await keyService.loadOrCreateKey();
     await LegacyVaultKeyMigration(root, secureKey).migrateTo(storage);
 
     final deviceIdBytes = await readOrCreateRandomBytes(

@@ -19,7 +19,7 @@ final class VaultKeyService {
   final VaultKeyStorage storage;
   final RequestKeyPolicy requestPolicy;
 
-  Future<Uint8List> openKey() async {
+  Future<Uint8List> loadOrCreateKey() async {
     final record = await storage.read();
     if (record == null) return _generate();
     final key = await secureKey.open(record);

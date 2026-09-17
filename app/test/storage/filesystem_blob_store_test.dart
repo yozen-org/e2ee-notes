@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:e2ee_notes/storage/storage_api.dart';
-import 'package:e2ee_notes/storage/storage_filesystem.dart';
+import 'package:e2ee_notes/storage/blob_store.dart';
+import 'package:e2ee_notes/storage/filesystem_blob_store.dart';
 
 void main() {
   test('objects are immutable and idempotent', () async {

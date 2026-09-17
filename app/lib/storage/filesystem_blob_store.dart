@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
-import 'package:e2ee_notes/storage/storage_api.dart';
+import 'package:e2ee_notes/storage/blob_store.dart';
 
 final class FilesystemBlobStore implements BlobStore {
   FilesystemBlobStore(Directory root) : _root = root.absolute;
