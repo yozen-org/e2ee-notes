@@ -1,18 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:secure_keys/secure_keys.dart';
 
 import 'opened_vault.dart';
+import 'request_key_policy.dart';
 import 'vault_builder.dart';
 import 'vault_opener/vault_opener.dart';
 
 class VaultGate extends StatefulWidget {
   const VaultGate({
     required this.vaultOpener,
+    required this.requestPolicy,
     required this.builder,
     super.key,
   });
 
   final VaultOpener vaultOpener;
+  final RequestKeyPolicy requestPolicy;
   final VaultBuilder builder;
 
   @override
@@ -30,36 +34,22 @@ class _VaultGateState extends State<VaultGate> {
     });
   }
 
-  void _open() => setState(() {
-    _vault = widget.vaultOpener(_requestPolicy);
-  });
+  void _open() {
+    final result = Completer<OpenedVault>();
+    setState(() {
+      _vault = result.future;
+    });
+    // Let FutureBuilder subscribe before the opener can show UI or fail.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _completeOpen(result));
+  }
 
-  Future<KeyPolicy> _requestPolicy(KeyCapabilities capabilities) async {
-    if (!mounted) throw StateError('Vault opening cancelled');
-    final accepted = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Save the vault key on this device?'),
-        content: Text(
-          capabilities.hardwareBacked
-              ? 'Use this device’s hardware to protect the key that unlocks your notes.'
-              : 'Hardware protection is unavailable. The key will be stored without hardware protection on this device.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-    if (accepted != true) throw StateError('Vault opening cancelled');
-    return KeyPolicy(allowSoftware: !capabilities.hardwareBacked);
+  Future<void> _completeOpen(Completer<OpenedVault> result) async {
+    if (!mounted) return;
+    try {
+      result.complete(await widget.vaultOpener(widget.requestPolicy));
+    } on Object catch (error, stackTrace) {
+      result.completeError(error, stackTrace);
+    }
   }
 
   @override
