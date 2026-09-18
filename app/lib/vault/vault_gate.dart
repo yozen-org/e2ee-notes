@@ -3,7 +3,7 @@ import 'package:secure_keys/secure_keys.dart';
 
 import 'opened_vault.dart';
 import 'vault_builder.dart';
-import 'vault_opener.dart';
+import 'vault_opener/vault_opener.dart';
 
 class VaultGate extends StatefulWidget {
   const VaultGate({

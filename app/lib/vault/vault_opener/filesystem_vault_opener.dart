@@ -4,15 +4,15 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:e2ee_notes/storage/filesystem_blob_store.dart';
 
-import 'read_or_create_random_bytes.dart';
+import '../read_or_create_random_bytes.dart';
 
 import 'package:secure_keys/secure_keys.dart';
 
-import 'file_vault_key_storage.dart';
-import 'legacy_vault_key_migration.dart';
-import 'opened_vault.dart';
-import 'request_key_policy.dart';
-import 'vault_key_service.dart';
+import '../file_vault_key_storage.dart';
+import '../legacy_vault_key_migration.dart';
+import '../opened_vault.dart';
+import '../request_key_policy.dart';
+import '../vault_key_service.dart';
 
 final class FilesystemVaultOpener {
   const FilesystemVaultOpener({

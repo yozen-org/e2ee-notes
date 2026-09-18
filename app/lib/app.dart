@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'notes/notes_home_page.dart';
 import 'notes/notes_repository_factory/notes_repository_factory.dart';
 import 'vault/vault_gate.dart';
-import 'vault/vault_opener.dart';
+import 'vault/vault_opener/vault_opener.dart';
 
 class E2eeNotesApp extends StatelessWidget {
   const E2eeNotesApp({

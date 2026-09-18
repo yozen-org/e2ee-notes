@@ -9,12 +9,12 @@ import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
 import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
 import 'package:e2ee_notes/notes/notes_repository_factory/encrypted_notes_repository_factory.dart';
-import 'package:e2ee_notes/vault/filesystem_vault_opener.dart';
+import 'package:e2ee_notes/vault/vault_opener/filesystem_vault_opener.dart';
 import 'package:e2ee_notes/vault/file_vault_key_storage.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';
 
-import '../../../packages/secure_keys/test/support/fake_tpm_keys.dart';
-import '../../../packages/secure_keys/test/support/fake_secure_enclave_keys.dart';
+import '../../../../packages/secure_keys/test/support/fake_tpm_keys.dart';
+import '../../../../packages/secure_keys/test/support/fake_secure_enclave_keys.dart';
 
 void main() {
   late Directory root;
