@@ -1,10 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/app.dart';
+import 'package:e2ee_notes/notes/notes_repository_factory/encrypted_notes_repository_factory.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
+import 'package:e2ee_notes/vault/opened_vault.dart';
 
 final class MemoryStore implements BlobStore {
   final objects = <String, Uint8List>{};
@@ -28,12 +29,17 @@ final class MemoryStore implements BlobStore {
 void main() {
   testWidgets('creates and displays an encrypted note', (tester) async {
     final store = MemoryStore();
-    final repository = EncryptedNotesRepository(
+    final vault = OpenedVault(
       store: store,
       vaultKey: Uint8List(32),
       deviceId: 'a' * 64,
     );
-    await tester.pumpWidget(E2eeNotesApp(vaultOpener: (_) async => repository));
+    await tester.pumpWidget(
+      E2eeNotesApp(
+        vaultOpener: (_) async => vault,
+        notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Your notes, your keys, your storage.'), findsOneWidget);

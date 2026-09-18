@@ -64,13 +64,19 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 ```text
 main（本番依存の組み立て）
   ├─ E2eeNotesApp → VaultGate（保存の確認・方針指定）
-  │                    └─ VaultBuilder → NotesHomePage
+  │                    └─ VaultBuilder
+  │                         └─ NotesRepositoryFactory → NotesHomePage
   └─ VaultOpener → FilesystemVaultOpener
-      → VaultKeyService
-          ├─ SecureKey → PlatformSecureKey → OS の実装
-          └─ VaultKeyStorage → FileVaultKeyStorage
-      → EncryptedNotesRepository（返された Vault 鍵を使用）
+       ├─ VaultKeyService
+       │    ├─ SecureKey → PlatformSecureKey → OS の実装
+       │    └─ VaultKeyStorage → FileVaultKeyStorage
+       ├─ BlobStore → FilesystemBlobStore
+       └─ OpenedVault
 ```
+
+`VaultOpener`は鍵・端末ID・`BlobStore`を持つ`OpenedVault`を返し、
+ノートRepositoryを構築しません。`NotesRepositoryFactory`が
+`OpenedVault`から`EncryptedNotesRepository`を構築します。
 
 `secure_keys` がハードウェアの選択、能力確認、鍵の生成・保護・復元、
 保存形式の解釈を担当します。アプリは `SecureKey` の共通契約を使います。

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:e2ee_notes/storage/filesystem_blob_store.dart';
@@ -11,6 +10,7 @@ import 'package:secure_keys/secure_keys.dart';
 
 import 'file_vault_key_storage.dart';
 import 'legacy_vault_key_migration.dart';
+import 'opened_vault.dart';
 import 'request_key_policy.dart';
 import 'vault_key_service.dart';
 
@@ -23,12 +23,12 @@ final class FilesystemVaultOpener {
   final SecureKey secureKey;
   final RequestKeyPolicy requestPolicy;
 
-  Future<EncryptedNotesRepository> open() async {
+  Future<OpenedVault> open() async {
     final support = await getApplicationSupportDirectory();
     return openAt(Directory(p.join(support.path, 'e2ee-notes')));
   }
 
-  Future<EncryptedNotesRepository> openAt(Directory root) async {
+  Future<OpenedVault> openAt(Directory root) async {
     await root.create(recursive: true);
     final storage = FileVaultKeyStorage(root);
     await LegacyVaultKeyMigration(root, secureKey).migrateTo(storage);
@@ -47,7 +47,7 @@ final class FilesystemVaultOpener {
     final deviceId = deviceIdBytes
         .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
         .join();
-    return EncryptedNotesRepository(
+    return OpenedVault(
       store: FilesystemBlobStore(Directory(p.join(root.path, 'storage'))),
       vaultKey: vaultKey,
       deviceId: deviceId,

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
 import 'package:e2ee_notes/vault/vault_gate.dart';
-import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
+import 'package:e2ee_notes/vault/opened_vault.dart';
 
 import '../widget_test.dart' show MemoryStore;
 
@@ -14,13 +14,13 @@ void main() {
       tester,
     ) async {
       var created = 0;
-      EncryptedNotesRepository? openedRepository;
+      OpenedVault? openedVault;
       KeyPolicy? policy;
       await tester.pumpWidget(
         MaterialApp(
           home: VaultGate(
-            builder: (context, repository) {
-              openedRepository = repository;
+            builder: (context, vault) {
+              openedVault = vault;
               return const Text('Vault ready');
             },
             vaultOpener: (requestPolicy) async {
@@ -32,7 +32,7 @@ void main() {
                 ),
               );
               created++;
-              return EncryptedNotesRepository(
+              return OpenedVault(
                 store: MemoryStore(),
                 vaultKey: Uint8List(32),
                 deviceId: 'a' * 64,
@@ -55,7 +55,7 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       expect(created, 1);
-      expect(openedRepository, isNotNull);
+      expect(openedVault, isNotNull);
       expect(policy!.allowSoftware, !hardware);
       expect(find.text('Vault ready'), findsOneWidget);
     });

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
-import '../notes/encrypted_notes_repository.dart';
+import 'opened_vault.dart';
 import 'vault_builder.dart';
 import 'vault_opener.dart';
 
@@ -20,7 +20,7 @@ class VaultGate extends StatefulWidget {
 }
 
 class _VaultGateState extends State<VaultGate> {
-  Future<EncryptedNotesRepository>? _repository;
+  Future<OpenedVault>? _vault;
 
   @override
   void initState() {
@@ -31,7 +31,7 @@ class _VaultGateState extends State<VaultGate> {
   }
 
   void _open() => setState(() {
-    _repository = widget.vaultOpener(_requestPolicy);
+    _vault = widget.vaultOpener(_requestPolicy);
   });
 
   Future<KeyPolicy> _requestPolicy(KeyCapabilities capabilities) async {
@@ -63,8 +63,8 @@ class _VaultGateState extends State<VaultGate> {
   }
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<EncryptedNotesRepository>(
-    future: _repository,
+  Widget build(BuildContext context) => FutureBuilder<OpenedVault>(
+    future: _vault,
     builder: (context, snapshot) {
       if (snapshot.hasError) {
         return Scaffold(

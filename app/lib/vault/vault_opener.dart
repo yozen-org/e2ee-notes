@@ -1,6 +1,6 @@
-import '../notes/encrypted_notes_repository.dart';
+import 'opened_vault.dart';
 import 'request_key_policy.dart';
 
-typedef VaultOpener = Future<EncryptedNotesRepository> Function(
+typedef VaultOpener = Future<OpenedVault> Function(
   RequestKeyPolicy requestPolicy,
 );

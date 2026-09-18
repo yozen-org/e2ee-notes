@@ -1,8 +1,5 @@
 import 'package:flutter/widgets.dart';
 
-import '../notes/encrypted_notes_repository.dart';
+import 'opened_vault.dart';
 
-typedef VaultBuilder = Widget Function(
-  BuildContext context,
-  EncryptedNotesRepository repository,
-);
+typedef VaultBuilder = Widget Function(BuildContext context, OpenedVault vault);
