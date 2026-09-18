@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
-import '../notes/notes_home_page.dart';
 import '../notes/encrypted_notes_repository.dart';
+import 'vault_builder.dart';
 import 'vault_opener.dart';
 
 class VaultGate extends StatefulWidget {
-  const VaultGate({required this.openVault, super.key});
+  const VaultGate({required this.openVault, required this.builder, super.key});
 
   final VaultOpener openVault;
+  final VaultBuilder builder;
 
   @override
   State<VaultGate> createState() => _VaultGateState();
@@ -77,7 +78,7 @@ class _VaultGateState extends State<VaultGate> {
       if (!snapshot.hasData) {
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       }
-      return NotesHomePage(repository: Future.value(snapshot.data!));
+      return widget.builder(context, snapshot.data!);
     },
   );
 }

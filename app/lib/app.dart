@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'notes/notes_home_page.dart';
 import 'vault/vault_gate.dart';
 import 'vault/vault_opener.dart';
 
@@ -17,7 +18,10 @@ class E2eeNotesApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff395b64)),
         useMaterial3: true,
       ),
-      home: VaultGate(openVault: openVault),
+      home: VaultGate(
+        openVault: openVault,
+        builder: (_, repository) => NotesHomePage(repository: repository),
+      ),
     );
   }
 }

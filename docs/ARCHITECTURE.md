@@ -64,6 +64,7 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 ```text
 main（本番依存の組み立て）
   ├─ E2eeNotesApp → VaultGate（保存の確認・方針指定）
+  │                    └─ VaultBuilder → NotesHomePage
   └─ VaultOpener → FilesystemVaultOpener
       → VaultKeyService
           ├─ SecureKey → PlatformSecureKey → OS の実装

@@ -5,7 +5,7 @@ import 'encrypted_notes_repository.dart';
 class NotesHomePage extends StatefulWidget {
   const NotesHomePage({required this.repository, super.key});
 
-  final Future<EncryptedNotesRepository> repository;
+  final EncryptedNotesRepository repository;
 
   @override
   State<NotesHomePage> createState() => _NotesHomePageState();
@@ -14,8 +14,7 @@ class NotesHomePage extends StatefulWidget {
 class _NotesHomePageState extends State<NotesHomePage> {
   late Future<List<NoteRecord>> _notes = _load();
 
-  Future<List<NoteRecord>> _load() async =>
-      (await widget.repository).loadNotes();
+  Future<List<NoteRecord>> _load() => widget.repository.loadNotes();
 
   void _reload() {
     setState(() {
@@ -65,16 +64,12 @@ class _NotesHomePageState extends State<NotesHomePage> {
       ),
     );
     if (shouldSave != true || !mounted) return;
-    await (await widget.repository).save(
-      noteId: note?.id,
-      title: title,
-      body: body,
-    );
+    await widget.repository.save(noteId: note?.id, title: title, body: body);
     if (mounted) _reload();
   }
 
   Future<void> _delete(NoteRecord note) async {
-    await (await widget.repository).delete(note.id);
+    await widget.repository.delete(note.id);
     if (mounted) _reload();
   }
 

@@ -14,10 +14,15 @@ void main() {
       tester,
     ) async {
       var created = 0;
+      EncryptedNotesRepository? openedRepository;
       KeyPolicy? policy;
       await tester.pumpWidget(
         MaterialApp(
           home: VaultGate(
+            builder: (context, repository) {
+              openedRepository = repository;
+              return const Text('Vault ready');
+            },
             openVault: (requestPolicy) async {
               policy = await requestPolicy(
                 KeyCapabilities(
@@ -50,8 +55,9 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       expect(created, 1);
+      expect(openedRepository, isNotNull);
       expect(policy!.allowSoftware, !hardware);
-      expect(find.text('New note'), findsOneWidget);
+      expect(find.text('Vault ready'), findsOneWidget);
     });
   }
 }
