@@ -7,7 +7,7 @@ import 'vault/filesystem_vault_opener.dart';
 void main() {
   runApp(
     E2eeNotesApp(
-      openVault: (requestPolicy) => FilesystemVaultOpener(
+      vaultOpener: (requestPolicy) => FilesystemVaultOpener(
         secureKey: PlatformSecureKey(),
         requestPolicy: requestPolicy,
       ).open(),

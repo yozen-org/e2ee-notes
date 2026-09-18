@@ -23,7 +23,7 @@ void main() {
               openedRepository = repository;
               return const Text('Vault ready');
             },
-            openVault: (requestPolicy) async {
+            vaultOpener: (requestPolicy) async {
               policy = await requestPolicy(
                 KeyCapabilities(
                   hardwareBacked: hardware,

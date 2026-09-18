@@ -33,7 +33,7 @@ void main() {
       vaultKey: Uint8List(32),
       deviceId: 'a' * 64,
     );
-    await tester.pumpWidget(E2eeNotesApp(openVault: (_) async => repository));
+    await tester.pumpWidget(E2eeNotesApp(vaultOpener: (_) async => repository));
     await tester.pumpAndSettle();
 
     expect(find.text('Your notes, your keys, your storage.'), findsOneWidget);

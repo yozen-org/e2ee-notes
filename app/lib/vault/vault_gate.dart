@@ -6,9 +6,13 @@ import 'vault_builder.dart';
 import 'vault_opener.dart';
 
 class VaultGate extends StatefulWidget {
-  const VaultGate({required this.openVault, required this.builder, super.key});
+  const VaultGate({
+    required this.vaultOpener,
+    required this.builder,
+    super.key,
+  });
 
-  final VaultOpener openVault;
+  final VaultOpener vaultOpener;
   final VaultBuilder builder;
 
   @override
@@ -27,7 +31,7 @@ class _VaultGateState extends State<VaultGate> {
   }
 
   void _open() => setState(() {
-    _repository = widget.openVault(_requestPolicy);
+    _repository = widget.vaultOpener(_requestPolicy);
   });
 
   Future<KeyPolicy> _requestPolicy(KeyCapabilities capabilities) async {

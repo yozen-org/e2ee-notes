@@ -5,9 +5,9 @@ import 'vault/vault_gate.dart';
 import 'vault/vault_opener.dart';
 
 class E2eeNotesApp extends StatelessWidget {
-  const E2eeNotesApp({required this.openVault, super.key});
+  const E2eeNotesApp({required this.vaultOpener, super.key});
 
-  final VaultOpener openVault;
+  final VaultOpener vaultOpener;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class E2eeNotesApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: VaultGate(
-        openVault: openVault,
+        vaultOpener: vaultOpener,
         builder: (_, repository) => NotesHomePage(repository: repository),
       ),
     );
