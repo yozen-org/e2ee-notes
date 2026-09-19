@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'notes/notes_home_page.dart';
+import 'app_home_page.dart';
 import 'notes/notes_repository_factory/notes_repository_factory.dart';
-import 'vault/key_policy_dialog.dart';
-import 'vault/vault_gate.dart';
 import 'vault/vault_opener/vault_opener.dart';
 
 class E2eeNotesApp extends StatelessWidget {
@@ -25,14 +23,9 @@ class E2eeNotesApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff395b64)),
         useMaterial3: true,
       ),
-      home: Builder(
-        builder: (context) => VaultGate(
-          vaultOpener: vaultOpener,
-          requestPolicy: (capabilities) =>
-              showKeyPolicyDialog(context, capabilities),
-          builder: (_, vault) =>
-              NotesHomePage(repository: notesRepositoryFactory.create(vault)),
-        ),
+      home: AppHomePage(
+        vaultOpener: vaultOpener,
+        notesRepositoryFactory: notesRepositoryFactory,
       ),
     );
   }

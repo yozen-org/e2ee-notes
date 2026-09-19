@@ -64,10 +64,10 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 ```text
 main（本番依存の組み立て）
   ├─ E2eeNotesApp
-  │    ├─ KeyPolicyDialog → RequestKeyPolicy
-  │    └─ VaultGate（ロード・失敗・再試行）
-  │         └─ VaultBuilder
-  │              └─ NotesRepositoryFactory → NotesHomePage
+  │    └─ AppHomePage（Vault状態に応じた画面選択）
+  │         ├─ KeyPolicyDialog → RequestKeyPolicy
+  │         ├─ VaultController（ロード・失敗・再試行）
+  │         └─ NotesRepositoryFactory → NotesHomePage
   └─ VaultOpener → FilesystemVaultOpener
        ├─ VaultKeyService
        │    ├─ SecureKey → PlatformSecureKey → OS の実装
