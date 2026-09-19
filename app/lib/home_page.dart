@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:secure_keys/secure_keys.dart';
 
 import 'notes/encrypted_notes_repository.dart';
 import 'notes/notes_home_page.dart';
@@ -40,9 +41,11 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Future<void> _openVault() => _vaultController.open(
-    (capabilities) => showKeyPolicyDialog(context, capabilities),
-  );
+  Future<void> _openVault() =>
+      _vaultController.open(requestKeyPolicy: _requestKeyPolicy);
+
+  Future<KeyPolicy> _requestKeyPolicy(KeyCapabilities capabilities) =>
+      showKeyPolicyDialog(context, capabilities);
 
   void _handleVaultStateChanged() {
     _createNotesRepositoryForOpenedVault();

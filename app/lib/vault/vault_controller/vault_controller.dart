@@ -13,11 +13,11 @@ final class VaultController extends ChangeNotifier {
 
   VaultState get state => _state;
 
-  Future<void> open(RequestKeyPolicy requestPolicy) async {
+  Future<void> open({required RequestKeyPolicy requestKeyPolicy}) async {
     if (_state is VaultOpening) return;
     _setState(const VaultOpening());
     try {
-      final vault = await _vaultOpener(requestPolicy);
+      final vault = await _vaultOpener(requestKeyPolicy);
       if (!_disposed) _setState(VaultOpened(vault));
     } on Object catch (error, stackTrace) {
       if (!_disposed) _setState(VaultOpenFailed(error, stackTrace));

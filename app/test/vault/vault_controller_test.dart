@@ -24,7 +24,7 @@ void main() {
     expect(controller.state, isA<VaultNotOpened>());
 
     final result = controller.open(
-      (_) async => const KeyPolicy(allowSoftware: true),
+      requestKeyPolicy: (_) async => const KeyPolicy(allowSoftware: true),
     );
     expect(controller.state, isA<VaultOpening>());
 
@@ -53,10 +53,10 @@ void main() {
     Future<KeyPolicy> requestPolicy(KeyCapabilities _) async =>
         const KeyPolicy(allowSoftware: true);
 
-    await controller.open(requestPolicy);
+    await controller.open(requestKeyPolicy: requestPolicy);
     expect(controller.state, isA<VaultOpenFailed>());
 
-    await controller.open(requestPolicy);
+    await controller.open(requestKeyPolicy: requestPolicy);
     expect(controller.state, isA<VaultOpened>());
     expect(attempts, 2);
 
