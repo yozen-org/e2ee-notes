@@ -23,39 +23,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late VaultController _vaultController;
+  late final VaultController _vaultController;
   EncryptedNotesRepository? _notesRepository;
 
   @override
   void initState() {
     super.initState();
-    _replaceVaultController();
+    _vaultController = VaultController(vaultOpener: widget.vaultOpener)
+      ..addListener(_handleVaultStateChanged);
     _scheduleVaultOpening();
   }
 
-  @override
-  void didUpdateWidget(covariant HomePage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.vaultOpener != widget.vaultOpener) {
-      _vaultController.dispose();
-      _replaceVaultController();
-      _scheduleVaultOpening();
-    } else if (oldWidget.notesRepositoryFactory !=
-        widget.notesRepositoryFactory) {
-      _createNotesRepositoryForOpenedVault();
-    }
-  }
-
-  void _replaceVaultController() {
-    _notesRepository = null;
-    _vaultController = VaultController(vaultOpener: widget.vaultOpener)
-      ..addListener(_handleVaultStateChanged);
-  }
-
   void _scheduleVaultOpening() {
-    final controller = _vaultController;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && identical(controller, _vaultController)) _openVault();
+      if (mounted) _openVault();
     });
   }
 
