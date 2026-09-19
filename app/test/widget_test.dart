@@ -35,7 +35,7 @@ void main() {
       deviceId: 'a' * 64,
     );
     await tester.pumpWidget(
-      E2eeNotesApp(
+      App(
         vaultOpener: (_) async => vault,
         notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
       ),

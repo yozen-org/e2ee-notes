@@ -63,8 +63,8 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 
 ```text
 main（本番依存の組み立て）
-  ├─ E2eeNotesApp
-  │    └─ AppHomePage（Vault状態に応じた画面選択）
+  ├─ App
+  │    └─ HomePage（Vault状態に応じた画面選択）
   │         ├─ KeyPolicyDialog → RequestKeyPolicy
   │         ├─ VaultController（ロード・失敗・再試行）
   │         └─ NotesRepositoryFactory → NotesHomePage

@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:e2ee_notes/app_home_page.dart';
+import 'package:e2ee_notes/home_page.dart';
 import 'package:e2ee_notes/notes/notes_repository_factory/encrypted_notes_repository_factory.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: AppHomePage(
+          home: HomePage(
             notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
             vaultOpener: (requestPolicy) async {
               attempts++;

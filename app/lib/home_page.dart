@@ -8,8 +8,8 @@ import 'vault/vault_controller/vault_controller.dart';
 import 'vault/vault_controller/vault_state.dart';
 import 'vault/vault_opener/vault_opener.dart';
 
-class AppHomePage extends StatefulWidget {
-  const AppHomePage({
+class HomePage extends StatefulWidget {
+  const HomePage({
     required this.vaultOpener,
     required this.notesRepositoryFactory,
     super.key,
@@ -19,10 +19,10 @@ class AppHomePage extends StatefulWidget {
   final NotesRepositoryFactory notesRepositoryFactory;
 
   @override
-  State<AppHomePage> createState() => _AppHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _AppHomePageState extends State<AppHomePage> {
+class _HomePageState extends State<HomePage> {
   late VaultController _vaultController;
   EncryptedNotesRepository? _notesRepository;
 
@@ -34,7 +34,7 @@ class _AppHomePageState extends State<AppHomePage> {
   }
 
   @override
-  void didUpdateWidget(covariant AppHomePage oldWidget) {
+  void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.vaultOpener != widget.vaultOpener) {
       _vaultController.dispose();
