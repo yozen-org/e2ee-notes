@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../request_key_policy.dart';
+import '../key_policy/request_key_policy.dart';
 import '../vault_opener/vault_opener.dart';
 import 'vault_state.dart';
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'notes/encrypted_notes_repository.dart';
 import 'notes/notes_home_page.dart';
 import 'notes/notes_repository_factory/notes_repository_factory.dart';
-import 'vault/key_policy_dialog.dart';
+import 'vault/key_policy/key_policy_dialog.dart';
 import 'vault/vault_controller/vault_controller.dart';
 import 'vault/vault_controller/vault_state.dart';
 import 'vault/vault_opener/vault_opener.dart';

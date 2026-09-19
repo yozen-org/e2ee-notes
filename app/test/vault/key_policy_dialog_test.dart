@@ -1,4 +1,4 @@
-import 'package:e2ee_notes/vault/key_policy_dialog.dart';
+import 'package:e2ee_notes/vault/key_policy/key_policy_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
