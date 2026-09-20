@@ -28,9 +28,9 @@ void main() {
   }
 
   File file(String name) => File('${root.path}/$name');
-  FilesystemVaultOpener vaultOpener() =>
-      FilesystemVaultOpener(secureKey: keys, requestPolicy: permit);
-  Future<OpenedVault> openVault() => vaultOpener().openAt(root);
+  FilesystemVaultOpener vaultOpener() => FilesystemVaultOpener(secureKey: keys);
+  Future<OpenedVault> openVault() =>
+      vaultOpener().openAt(root, requestKeyPolicy: permit);
   Future<EncryptedNotesRepository> openNotes() async =>
       repositoryFactory.create(await openVault());
   Future<Uint8List> openKey() async {
@@ -60,11 +60,14 @@ void main() {
     expect(tpm.keys, hasLength(1));
   });
   test('cancelled permission does not generate or persist a key', () async {
-    final cancelled = FilesystemVaultOpener(
-      secureKey: keys,
-      requestPolicy: (_) async => throw StateError('cancelled'),
+    final cancelled = FilesystemVaultOpener(secureKey: keys);
+    await expectLater(
+      cancelled.openAt(
+        root,
+        requestKeyPolicy: (_) async => throw StateError('cancelled'),
+      ),
+      throwsStateError,
     );
-    await expectLater(cancelled.openAt(root), throwsStateError);
     expect(tpm.keys, isEmpty);
     expect(await file('vault-key.json').exists(), isFalse);
   });

@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';
 
+import 'support/callback_vault_opener.dart';
+
 final class MemoryStore implements BlobStore {
   final objects = <String, Uint8List>{};
 
@@ -36,7 +38,7 @@ void main() {
     );
     await tester.pumpWidget(
       App(
-        vaultOpener: (_) async => vault,
+        vaultOpener: CallbackVaultOpener((_) async => vault),
         notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
       ),
     );

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
 
+import 'support/callback_vault_opener.dart';
 import 'widget_test.dart' show MemoryStore;
 
 void main() {
@@ -19,7 +20,7 @@ void main() {
         MaterialApp(
           home: HomePage(
             notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
-            vaultOpener: (requestPolicy) async {
+            vaultOpener: CallbackVaultOpener((requestPolicy) async {
               attempts++;
               if (attempts == 1) throw StateError('failed');
               final policy = await requestPolicy(
@@ -35,7 +36,7 @@ void main() {
                 vaultKey: Uint8List(32),
                 deviceId: 'a' * 64,
               );
-            },
+            }),
           ),
         ),
       );

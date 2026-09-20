@@ -7,6 +7,7 @@ import 'package:e2ee_notes/vault/vault_controller/vault_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
 
+import '../support/callback_vault_opener.dart';
 import '../widget_test.dart' show MemoryStore;
 
 void main() {
@@ -18,7 +19,7 @@ void main() {
     );
     final opening = Completer<OpenedVault>();
     final controller = VaultController(
-      vaultOpener: (requestPolicy) => opening.future,
+      vaultOpener: CallbackVaultOpener((_) => opening.future),
     );
 
     expect(controller.state, isA<VaultNotOpened>());
@@ -44,11 +45,11 @@ void main() {
       deviceId: 'a' * 64,
     );
     final controller = VaultController(
-      vaultOpener: (_) async {
+      vaultOpener: CallbackVaultOpener((_) async {
         attempts++;
         if (attempts == 1) throw StateError('failed');
         return vault;
-      },
+      }),
     );
     Future<KeyPolicy> requestPolicy(KeyCapabilities _) async =>
         const KeyPolicy(allowSoftware: true);

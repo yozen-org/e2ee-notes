@@ -1,41 +1,43 @@
 import 'dart:io';
 
+import 'package:e2ee_notes/storage/filesystem_blob_store.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:e2ee_notes/storage/filesystem_blob_store.dart';
-
-import '../read_or_create_random_bytes.dart';
-
 import 'package:secure_keys/secure_keys.dart';
 
 import '../file_vault_key_storage.dart';
+import '../key_policy/request_key_policy.dart';
 import '../legacy_vault_key_migration.dart';
 import '../opened_vault.dart';
-import '../key_policy/request_key_policy.dart';
+import '../read_or_create_random_bytes.dart';
 import '../vault_key_service.dart';
+import 'vault_opener.dart';
 
-final class FilesystemVaultOpener {
-  const FilesystemVaultOpener({
-    required this.secureKey,
-    required this.requestPolicy,
-  });
+final class FilesystemVaultOpener implements VaultOpener {
+  const FilesystemVaultOpener({required this.secureKey});
 
   final SecureKey secureKey;
-  final RequestKeyPolicy requestPolicy;
 
-  Future<OpenedVault> open() async {
+  @override
+  Future<OpenedVault> open({required RequestKeyPolicy requestKeyPolicy}) async {
     final support = await getApplicationSupportDirectory();
-    return openAt(Directory(p.join(support.path, 'e2ee-notes')));
+    return openAt(
+      Directory(p.join(support.path, 'e2ee-notes')),
+      requestKeyPolicy: requestKeyPolicy,
+    );
   }
 
-  Future<OpenedVault> openAt(Directory root) async {
+  Future<OpenedVault> openAt(
+    Directory root, {
+    required RequestKeyPolicy requestKeyPolicy,
+  }) async {
     await root.create(recursive: true);
     final storage = FileVaultKeyStorage(root);
     await LegacyVaultKeyMigration(root, secureKey).migrateTo(storage);
     final keyService = VaultKeyService(
       secureKey: secureKey,
       storage: storage,
-      requestPolicy: requestPolicy,
+      requestPolicy: requestKeyPolicy,
     );
     final vaultKey = await keyService.loadOrCreateKey();
     await LegacyVaultKeyMigration(root, secureKey).migrateTo(storage);

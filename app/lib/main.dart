@@ -9,10 +9,7 @@ void main() {
   runApp(
     App(
       notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
-      vaultOpener: (requestPolicy) => FilesystemVaultOpener(
-        secureKey: PlatformSecureKey(),
-        requestPolicy: requestPolicy,
-      ).open(),
+      vaultOpener: FilesystemVaultOpener(secureKey: PlatformSecureKey()),
     ),
   );
 }

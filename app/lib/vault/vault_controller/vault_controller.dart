@@ -17,7 +17,7 @@ final class VaultController extends ChangeNotifier {
     if (_state is VaultOpening) return;
     _setState(const VaultOpening());
     try {
-      final vault = await _vaultOpener(requestKeyPolicy);
+      final vault = await _vaultOpener.open(requestKeyPolicy: requestKeyPolicy);
       if (!_disposed) _setState(VaultOpened(vault));
     } on Object catch (error, stackTrace) {
       if (!_disposed) _setState(VaultOpenFailed(error, stackTrace));
