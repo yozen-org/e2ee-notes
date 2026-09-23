@@ -1,5 +1,5 @@
 PRODUCT_NAME = e2ee_notes
 
-PRODUCT_BUNDLE_IDENTIFIER = org.yozen.e2eeNotes
+PRODUCT_BUNDLE_IDENTIFIER = org.yozen.e2eedocs
 
 PRODUCT_COPYRIGHT = Copyright © 2026 org.yozen. All rights reserved.
