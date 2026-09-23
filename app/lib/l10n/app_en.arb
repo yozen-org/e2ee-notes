@@ -1,0 +1,44 @@
+{
+  "@@locale": "en",
+  "appTitle": "E2EE Notes",
+  "vaultSubtitle": "Local encrypted vault · hardware-backed when available",
+  "couldNotOpenVault": "Could not open vault: {error}",
+  "@couldNotOpenVault": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "retry": "Retry",
+  "couldNotLoadNotes": "Could not load notes: {error}",
+  "@couldNotLoadNotes": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "newNote": "New note",
+  "editNote": "Edit note",
+  "untitled": "Untitled",
+  "deleteNote": "Delete",
+  "noteTitleLabel": "Title",
+  "noteBodyLabel": "Note",
+  "encryptAndSave": "Encrypt & save",
+  "couldNotSaveNote": "Could not save note: {error}",
+  "@couldNotSaveNote": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyNotesHeadline": "Your notes, your keys, your storage.",
+  "emptyNotesBody": "Create a note. Only its encrypted operation is stored.",
+  "saveVaultKeyQuestion": "Save the vault key on this device?",
+  "saveVaultKeyHardware": "Use this device's hardware to protect the key that unlocks your notes.",
+  "saveVaultKeySoftware": "Hardware protection is unavailable. The key will be stored without hardware protection on this device.",
+  "cancel": "Cancel",
+  "continueAction": "Continue"
+}

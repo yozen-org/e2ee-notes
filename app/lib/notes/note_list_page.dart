@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'encrypted_notes_repository.dart';
 
 class NoteListPage extends StatelessWidget {
@@ -16,16 +17,15 @@ class NoteListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('E2EE Notes'),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(28),
+        title: Text(l10n.appTitle),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(28),
           child: Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Local encrypted vault · hardware-backed when available',
-            ),
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(l10n.vaultSubtitle),
           ),
         ),
       ),
@@ -39,7 +39,7 @@ class NoteListPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => onEdit(null),
         icon: const Icon(Icons.add),
-        label: const Text('New note'),
+        label: Text(l10n.newNote),
       ),
     );
   }
@@ -50,24 +50,25 @@ class _EmptyNotes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final l10n = AppLocalizations.of(context)!;
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.enhanced_encryption_outlined, size: 56),
-            SizedBox(height: 20),
+            const Icon(Icons.enhanced_encryption_outlined, size: 56),
+            const SizedBox(height: 20),
             Text(
-              'Your notes, your keys, your storage.',
+              l10n.emptyNotesHeadline,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 12),
-            Text('Create a note. Only its encrypted operation is stored.'),
+            const SizedBox(height: 12),
+            Text(l10n.emptyNotesBody),
           ],
         ),
       ),
@@ -88,6 +89,7 @@ class _NotesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: notes.length,
@@ -95,7 +97,7 @@ class _NotesList extends StatelessWidget {
       itemBuilder: (context, index) {
         final note = notes[index];
         return ListTile(
-          title: Text(note.title.isEmpty ? 'Untitled' : note.title),
+          title: Text(note.title.isEmpty ? l10n.untitled : note.title),
           subtitle: Text(
             note.body,
             maxLines: 2,
@@ -103,7 +105,7 @@ class _NotesList extends StatelessWidget {
           ),
           onTap: () => onEdit(note),
           trailing: IconButton(
-            tooltip: 'Delete',
+            tooltip: l10n.deleteNote,
             icon: const Icon(Icons.delete_outline),
             onPressed: () => onDelete(note),
           ),

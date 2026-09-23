@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
 import 'home_state.dart';
+import 'l10n/app_localizations.dart';
 import 'notes/notes_home_page.dart';
 import 'notes/notes_repository_factory/notes_repository_factory.dart';
 import 'vault/key_policy/key_policy_dialog.dart';
@@ -66,24 +67,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-  Widget build(BuildContext context) => switch (_state) {
-        HomeLoading() => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        HomeFailed(:final error) => Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Could not open vault: $error'),
-                TextButton(
-                  onPressed: _openVault,
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (_state) {
+      HomeLoading() => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      HomeFailed(:final error) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.couldNotOpenVault('$error')),
+              TextButton(
+                onPressed: _openVault,
+                child: Text(l10n.retry),
+              ),
+            ],
           ),
         ),
-        HomeReady(:final repository) => NotesHomePage(repository: repository),
-      };
+      ),
+      HomeReady(:final repository) => NotesHomePage(repository: repository),
+    };
+  }
 }

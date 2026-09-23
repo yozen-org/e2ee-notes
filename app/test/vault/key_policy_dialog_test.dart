@@ -1,3 +1,4 @@
+import 'package:e2ee_notes/l10n/app_localizations.dart';
 import 'package:e2ee_notes/vault/key_policy/key_policy_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,8 @@ void main() {
       late BuildContext context;
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (current) {
               context = current;
@@ -38,6 +41,8 @@ void main() {
     late BuildContext context;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (current) {
             context = current;

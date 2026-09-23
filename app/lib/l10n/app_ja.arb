@@ -1,0 +1,23 @@
+{
+  "@@locale": "ja",
+  "appTitle": "E2EE Notes",
+  "vaultSubtitle": "ローカル暗号化 vault · 利用可能な場合はハードウェア保護",
+  "couldNotOpenVault": "vault を開けませんでした: {error}",
+  "retry": "再試行",
+  "couldNotLoadNotes": "ノートを読み込めませんでした: {error}",
+  "newNote": "新しいノート",
+  "editNote": "ノートを編集",
+  "untitled": "無題",
+  "deleteNote": "削除",
+  "noteTitleLabel": "タイトル",
+  "noteBodyLabel": "本文",
+  "encryptAndSave": "暗号化して保存",
+  "couldNotSaveNote": "ノートを保存できませんでした: {error}",
+  "emptyNotesHeadline": "あなたのノート、あなたの鍵、あなたのストレージ。",
+  "emptyNotesBody": "ノートを作成してください。暗号化された操作だけが保存されます。",
+  "saveVaultKeyQuestion": "このデバイスに vault キーを保存しますか？",
+  "saveVaultKeyHardware": "このデバイスのハードウェアで、ノートを復号する鍵を保護します。",
+  "saveVaultKeySoftware": "ハードウェア保護は利用できません。このデバイスでは鍵はハードウェア保護なしで保存されます。",
+  "cancel": "キャンセル",
+  "continueAction": "続行"
+}

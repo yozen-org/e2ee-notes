@@ -1,28 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
+import '../../l10n/app_localizations.dart';
+
 Future<KeyPolicy> showKeyPolicyDialog(
   BuildContext context,
   KeyCapabilities capabilities,
 ) async {
+  final l10n = AppLocalizations.of(context)!;
   final accepted = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (context) => AlertDialog(
-      title: const Text('Save the vault key on this device?'),
+      title: Text(l10n.saveVaultKeyQuestion),
       content: Text(
         capabilities.hardwareBacked
-            ? 'Use this device’s hardware to protect the key that unlocks your notes.'
-            : 'Hardware protection is unavailable. The key will be stored without hardware protection on this device.',
+            ? l10n.saveVaultKeyHardware
+            : l10n.saveVaultKeySoftware,
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Continue'),
+          child: Text(l10n.continueAction),
         ),
       ],
     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'encrypted_notes_repository.dart';
 import 'note_detail_page.dart';
 import 'note_list_page.dart';
@@ -55,17 +56,20 @@ class _NotesHomePageState extends State<NotesHomePage> {
   }
 
   @override
-  Widget build(BuildContext context) => switch (_state) {
-        NotesLoading() => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        NotesFailed(:final error) => Scaffold(
-          body: Center(child: Text('Could not load notes: $error')),
-        ),
-        NotesReady(:final notes) => NoteListPage(
-          notes: notes,
-          onEdit: _openDetail,
-          onDelete: _delete,
-        ),
-      };
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (_state) {
+      NotesLoading() => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      NotesFailed(:final error) => Scaffold(
+        body: Center(child: Text(l10n.couldNotLoadNotes('$error'))),
+      ),
+      NotesReady(:final notes) => NoteListPage(
+        notes: notes,
+        onEdit: _openDetail,
+        onDelete: _delete,
+      ),
+    };
+  }
 }
