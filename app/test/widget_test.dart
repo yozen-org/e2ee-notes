@@ -47,8 +47,8 @@ void main() {
     expect(find.text('Your notes, your keys, your storage.'), findsOneWidget);
     await tester.tap(find.text('New note'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField).first, 'My note');
-    await tester.enterText(find.byType(TextFormField).last, 'Private body');
+    await tester.enterText(find.byType(TextField).first, 'My note');
+    await tester.enterText(find.byType(TextField).last, 'Private body');
     await tester.tap(find.text('Encrypt & save'));
     await tester.pumpAndSettle();
 

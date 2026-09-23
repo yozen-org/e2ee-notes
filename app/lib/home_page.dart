@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
-import 'notes/encrypted_notes_repository.dart';
+import 'home_state.dart';
 import 'notes/notes_home_page.dart';
 import 'notes/notes_repository_factory/notes_repository_factory.dart';
 import 'vault/key_policy/key_policy_dialog.dart';
@@ -25,7 +25,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final VaultController _vaultController;
-  EncryptedNotesRepository? _notesRepository;
+  HomeState _state = const HomeLoading();
 
   @override
   void initState() {
@@ -48,16 +48,16 @@ class _HomePageState extends State<HomePage> {
       showKeyPolicyDialog(context, capabilities);
 
   void _handleVaultStateChanged() {
-    _createNotesRepositoryForOpenedVault();
+    _state = _mapToHomeState(_vaultController.state);
     setState(() {});
   }
 
-  void _createNotesRepositoryForOpenedVault() {
-    final state = _vaultController.state;
-    _notesRepository = state is VaultOpened
-        ? widget.notesRepositoryFactory.create(state.vault)
-        : null;
-  }
+  HomeState _mapToHomeState(VaultState state) => switch (state) {
+        VaultNotOpened() || VaultOpening() => const HomeLoading(),
+        VaultOpenFailed(:final error) => HomeFailed(error),
+        VaultOpened(:final vault) =>
+          HomeReady(widget.notesRepositoryFactory.create(vault)),
+      };
 
   @override
   void dispose() {
@@ -66,21 +66,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-  Widget build(BuildContext context) => switch (_vaultController.state) {
-    VaultNotOpened() || VaultOpening() => const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    ),
-    VaultOpenFailed(:final error) => Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Could not open vault: $error'),
-            TextButton(onPressed: _openVault, child: const Text('Retry')),
-          ],
+  Widget build(BuildContext context) => switch (_state) {
+        HomeLoading() => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
         ),
-      ),
-    ),
-    VaultOpened() => NotesHomePage(repository: _notesRepository!),
-  };
+        HomeFailed(:final error) => Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Could not open vault: $error'),
+                TextButton(
+                  onPressed: _openVault,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        HomeReady(:final repository) => NotesHomePage(repository: repository),
+      };
 }
