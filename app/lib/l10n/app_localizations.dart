@@ -104,12 +104,6 @@ abstract class AppLocalizations {
   /// **'E2EE Notes'**
   String get appTitle;
 
-  /// No description provided for @vaultSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Local encrypted vault · hardware-backed when available'**
-  String get vaultSubtitle;
-
   /// No description provided for @couldNotOpenVault.
   ///
   /// In en, this message translates to:
@@ -152,18 +146,6 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get deleteNote;
 
-  /// No description provided for @noteTitleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get noteTitleLabel;
-
-  /// No description provided for @noteBodyLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Note'**
-  String get noteBodyLabel;
-
   /// No description provided for @encryptAndSave.
   ///
   /// In en, this message translates to:
@@ -175,18 +157,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save note: {error}'**
   String couldNotSaveNote(String error);
-
-  /// No description provided for @emptyNotesHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'Your notes, your keys, your storage.'**
-  String get emptyNotesHeadline;
-
-  /// No description provided for @emptyNotesBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Create a note. Only its encrypted operation is stored.'**
-  String get emptyNotesBody;
 
   /// No description provided for @saveVaultKeyQuestion.
   ///

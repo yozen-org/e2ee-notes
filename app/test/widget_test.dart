@@ -44,7 +44,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Your notes, your keys, your storage.'), findsOneWidget);
+    expect(find.text('New note'), findsOneWidget);
     await tester.tap(find.text('New note'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'My note');

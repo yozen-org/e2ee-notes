@@ -57,7 +57,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(attempts, 2);
-      expect(find.text('Your notes, your keys, your storage.'), findsOneWidget);
+      expect(find.text('New note'), findsOneWidget);
     },
   );
 }

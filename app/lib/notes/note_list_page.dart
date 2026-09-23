@@ -19,58 +19,17 @@ class NoteListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(28),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(l10n.vaultSubtitle),
-          ),
+      body: SafeArea(
+        child: _NotesList(
+          notes: notes,
+          onEdit: onEdit,
+          onDelete: onDelete,
         ),
       ),
-      body: notes.isEmpty
-          ? const _EmptyNotes()
-          : _NotesList(
-              notes: notes,
-              onEdit: onEdit,
-              onDelete: onDelete,
-            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => onEdit(null),
         icon: const Icon(Icons.add),
         label: Text(l10n.newNote),
-      ),
-    );
-  }
-}
-
-class _EmptyNotes extends StatelessWidget {
-  const _EmptyNotes();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.enhanced_encryption_outlined, size: 56),
-            const SizedBox(height: 20),
-            Text(
-              l10n.emptyNotesHeadline,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(l10n.emptyNotesBody),
-          ],
-        ),
       ),
     );
   }

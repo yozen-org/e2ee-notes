@@ -73,7 +73,11 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
             TextField(
               controller: _titleController,
               autofocus: true,
-              decoration: InputDecoration(labelText: l10n.noteTitleLabel),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: const InputDecoration(border: InputBorder.none),
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -82,7 +86,7 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
                 expands: true,
                 maxLines: null,
                 textAlignVertical: TextAlignVertical.top,
-                decoration: InputDecoration(labelText: l10n.noteBodyLabel),
+                decoration: const InputDecoration(border: InputBorder.none),
               ),
             ),
           ],
