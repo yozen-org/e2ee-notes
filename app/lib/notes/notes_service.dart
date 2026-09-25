@@ -14,12 +14,10 @@ final class NotesService {
     DateTime Function()? clock,
     Random? random,
   }) : _log = log, // ignore: prefer_initializing_formals
-       _deviceId = deviceId,
+       _deviceId = deviceId, // ignore: prefer_initializing_formals
        _projection = projection, // ignore: prefer_initializing_formals
        _clock = clock ?? DateTime.now,
-       _random = random ?? Random.secure() {
-    _requireIdentifier(deviceId, 'deviceId');
-  }
+       _random = random ?? Random.secure();
 
   final EncryptedOperationLog _log;
   final String _deviceId;
@@ -42,7 +40,6 @@ final class NotesService {
     final operations = await _log.readAll();
     _syncSequence(operations);
     final actualNoteId = noteId ?? _identifier();
-    _requireIdentifier(actualNoteId, 'noteId');
     final operationId = _identifier();
     final now = _clock().toUtc();
     final operation = NoteOperation(
@@ -69,7 +66,6 @@ final class NotesService {
   Future<void> delete(String noteId) async {
     final operations = await _log.readAll();
     _syncSequence(operations);
-    _requireIdentifier(noteId, 'noteId');
     await _log.append(
       NoteOperation(
         operationId: _identifier(),
@@ -94,16 +90,6 @@ final class NotesService {
   String _identifier() {
     final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
     return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
-  }
-
-  static void _requireIdentifier(String value, String name) {
-    if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(value)) {
-      throw ArgumentError.value(
-        value,
-        name,
-        'must be 64 lowercase hex characters',
-      );
-    }
   }
 }
 

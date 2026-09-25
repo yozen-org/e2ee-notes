@@ -97,6 +97,12 @@ void main() {
       throwsFormatException,
     );
   });
+  test('rejects a malformed identifier when deserializing', () {
+    final json = operation.toJson();
+    json['noteID'] = 'not-hex';
+
+    expect(() => NoteOperation.fromJson(json), throwsFormatException);
+  });
 }
 
 Uint8List _hex(String value) {

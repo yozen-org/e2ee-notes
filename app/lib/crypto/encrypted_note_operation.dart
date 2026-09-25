@@ -45,15 +45,25 @@ final class NoteOperation {
     if (json['version'] != 1) {
       throw const FormatException('unsupported operation version');
     }
+    final operationId = json['operationID'] as String;
+    final noteId = json['noteID'] as String;
+    final deviceId = json['deviceID'] as String;
+    final baseOperationId = json['baseOperationID'] as String?;
+    _requireIdentifier(operationId, 'operationID');
+    _requireIdentifier(noteId, 'noteID');
+    _requireIdentifier(deviceId, 'deviceID');
+    if (baseOperationId != null) {
+      _requireIdentifier(baseOperationId, 'baseOperationID');
+    }
     final kindName = json['kind'] as String;
     return NoteOperation(
-      operationId: json['operationID'] as String,
-      noteId: json['noteID'] as String,
-      deviceId: json['deviceID'] as String,
+      operationId: operationId,
+      noteId: noteId,
+      deviceId: deviceId,
       sequence: json['sequence'] as int,
       timestampMicros: json['timestampMicros'] as int,
       kind: NoteOperationKind.values.byName(kindName),
-      baseOperationId: json['baseOperationID'] as String?,
+      baseOperationId: baseOperationId,
       title: json['title'] as String?,
       body: json['body'] as String?,
     );
@@ -90,8 +100,10 @@ final class EncryptedOperation {
     if (json['version'] != version || json['suite'] != suite) {
       throw const FormatException('unsupported encrypted operation format');
     }
+    final objectId = json['objectID'] as String;
+    _requireIdentifier(objectId, 'objectID');
     return EncryptedOperation(
-      objectId: json['objectID'] as String,
+      objectId: objectId,
       nonce: base64Decode(json['nonce'] as String),
       ciphertext: base64Decode(json['ciphertext'] as String),
     );
@@ -186,5 +198,11 @@ final class OperationCipher {
         'must be 64 lowercase hex characters',
       );
     }
+  }
+}
+
+void _requireIdentifier(String value, String name) {
+  if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(value)) {
+    throw FormatException('$name must be 64 lowercase hex characters');
   }
 }
