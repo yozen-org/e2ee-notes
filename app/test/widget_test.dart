@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:e2ee_notes/app.dart';
-import 'package:e2ee_notes/notes/notes_repository_factory/encrypted_notes_repository_factory.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
@@ -37,10 +36,7 @@ void main() {
       deviceId: 'a' * 64,
     );
     await tester.pumpWidget(
-      App(
-        vaultOpener: CallbackVaultOpener((_) async => vault),
-        notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
-      ),
+      App(vaultOpener: CallbackVaultOpener((_) async => vault)),
     );
     await tester.pumpAndSettle();
 

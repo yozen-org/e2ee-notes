@@ -1,4 +1,4 @@
-import 'encrypted_notes_repository.dart';
+import 'note_record.dart';
 
 sealed class NotesState {
   const NotesState();

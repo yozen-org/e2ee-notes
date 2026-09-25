@@ -3,7 +3,8 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
+import 'package:e2ee_notes/notes/encrypted_operation_log.dart';
+import 'package:e2ee_notes/notes/notes_service.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
 
 final class MemoryStore implements BlobStore {
@@ -38,19 +39,18 @@ void main() {
     'stores only encrypted immutable operations and rebuilds notes',
     () async {
       final store = MemoryStore();
-      final repository = EncryptedNotesRepository(
-        store: store,
-        vaultKey: vaultKey,
+      final service = NotesService(
+        log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
         deviceId: deviceId,
         random: Random(7),
         clock: () => DateTime.utc(2026, 9, 7),
       );
 
-      final created = await repository.save(
+      final created = await service.save(
         title: 'Private',
         body: 'secret body',
       );
-      await repository.save(
+      await service.save(
         noteId: created.id,
         title: 'Updated',
         body: 'new body',
@@ -64,9 +64,8 @@ void main() {
       expect(persisted, isNot(contains('Updated')));
       expect(persisted, isNot(contains('new body')));
 
-      final reopened = EncryptedNotesRepository(
-        store: store,
-        vaultKey: vaultKey,
+      final reopened = NotesService(
+        log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
         deviceId: deviceId,
       );
       final notes = await reopened.loadNotes();
@@ -78,28 +77,26 @@ void main() {
 
   test('delete appends a tombstone and removes note from projection', () async {
     final store = MemoryStore();
-    final repository = EncryptedNotesRepository(
-      store: store,
-      vaultKey: vaultKey,
+    final service = NotesService(
+      log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
       deviceId: deviceId,
       random: Random(9),
     );
-    final note = await repository.save(title: 'Delete me', body: 'body');
-    await repository.delete(note.id);
+    final note = await service.save(title: 'Delete me', body: 'body');
+    await service.delete(note.id);
 
-    expect(await repository.loadNotes(), isEmpty);
+    expect(await service.loadNotes(), isEmpty);
     expect(store.objects, hasLength(2));
   });
 
   test('fails closed when an encrypted operation is modified', () async {
     final store = MemoryStore();
-    final repository = EncryptedNotesRepository(
-      store: store,
-      vaultKey: vaultKey,
+    final service = NotesService(
+      log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
       deviceId: deviceId,
       random: Random(11),
     );
-    await repository.save(title: 'Title', body: 'Body');
+    await service.save(title: 'Title', body: 'Body');
     final key = store.objects.keys.single;
     final envelope =
         jsonDecode(utf8.decode(store.objects[key]!)) as Map<String, dynamic>;
@@ -108,6 +105,6 @@ void main() {
     envelope['ciphertext'] = base64Encode(ciphertext);
     store.objects[key] = Uint8List.fromList(utf8.encode(jsonEncode(envelope)));
 
-    await expectLater(repository.loadNotes(), throwsA(anything));
+    await expectLater(service.loadNotes(), throwsA(anything));
   });
 }

@@ -1,4 +1,4 @@
-import 'notes/encrypted_notes_repository.dart';
+import 'notes/notes_service.dart';
 
 sealed class HomeState {
   const HomeState();
@@ -15,7 +15,7 @@ final class HomeFailed extends HomeState {
 }
 
 final class HomeReady extends HomeState {
-  const HomeReady(this.repository);
+  const HomeReady(this.service);
 
-  final EncryptedNotesRepository repository;
+  final NotesService service;
 }

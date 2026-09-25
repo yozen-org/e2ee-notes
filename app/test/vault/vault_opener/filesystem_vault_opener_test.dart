@@ -7,8 +7,7 @@ import 'package:secure_keys/secure_keys.dart';
 import 'package:secure_keys/src/secure_enclave/secure_enclave_secure_key.dart';
 import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
-import 'package:e2ee_notes/notes/encrypted_notes_repository.dart';
-import 'package:e2ee_notes/notes/notes_repository_factory/encrypted_notes_repository_factory.dart';
+import 'package:e2ee_notes/notes/notes_service.dart';
 import 'package:e2ee_notes/vault/vault_opener/filesystem_vault_opener.dart';
 import 'package:e2ee_notes/vault/file_vault_key_storage.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';
@@ -20,7 +19,6 @@ void main() {
   late Directory root;
   late FakeTpmKeys tpm;
   late SecureKey keys;
-  const repositoryFactory = EncryptedNotesRepositoryFactory();
   int permissions = 0;
   Future<KeyPolicy> permit(KeyCapabilities caps) async {
     permissions++;
@@ -31,8 +29,8 @@ void main() {
   FilesystemVaultOpener vaultOpener() => FilesystemVaultOpener(secureKey: keys);
   Future<OpenedVault> openVault() =>
       vaultOpener().openAt(root, requestKeyPolicy: permit);
-  Future<EncryptedNotesRepository> openNotes() async =>
-      repositoryFactory.create(await openVault());
+  Future<NotesService> openNotes() async =>
+      createNotesService(await openVault());
   Future<Uint8List> openKey() async {
     await openVault();
     return keys.open((await FileVaultKeyStorage(root).read())!);

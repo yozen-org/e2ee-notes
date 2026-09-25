@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
-import 'encrypted_notes_repository.dart';
+import 'note_record.dart';
+import 'notes_service.dart';
 
 class NoteDetailPage extends StatefulWidget {
   const NoteDetailPage({
-    required this.repository,
+    required this.service,
     this.note,
     super.key,
   });
 
-  final EncryptedNotesRepository repository;
+  final NotesService service;
   final NoteRecord? note;
 
   @override
@@ -36,7 +37,7 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await widget.repository.save(
+      await widget.service.save(
         noteId: widget.note?.id,
         title: _titleController.text,
         body: _bodyController.text,

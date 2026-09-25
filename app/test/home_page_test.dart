@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:e2ee_notes/home_page.dart';
 import 'package:e2ee_notes/l10n/app_localizations.dart';
-import 'package:e2ee_notes/notes/notes_repository_factory/encrypted_notes_repository_factory.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,7 +21,6 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: HomePage(
-            notesRepositoryFactory: const EncryptedNotesRepositoryFactory(),
             vaultOpener: CallbackVaultOpener((requestPolicy) async {
               attempts++;
               if (attempts == 1) throw StateError('failed');

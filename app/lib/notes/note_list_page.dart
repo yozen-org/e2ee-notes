@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
-import 'encrypted_notes_repository.dart';
+import 'note_record.dart';
 
 class NoteListPage extends StatelessWidget {
   const NoteListPage({
     required this.notes,
-    required this.onEdit,
+    required this.onOpen,
+    required this.onCreate,
     required this.onDelete,
     super.key,
   });
 
   final List<NoteRecord> notes;
-  final void Function(NoteRecord? note) onEdit;
+  final void Function(NoteRecord note) onOpen;
+  final void Function() onCreate;
   final void Function(NoteRecord note) onDelete;
 
   @override
@@ -22,12 +24,12 @@ class NoteListPage extends StatelessWidget {
       body: SafeArea(
         child: _NotesList(
           notes: notes,
-          onEdit: onEdit,
+          onOpen: onOpen,
           onDelete: onDelete,
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => onEdit(null),
+        onPressed: onCreate,
         icon: const Icon(Icons.add),
         label: Text(l10n.newNote),
       ),
@@ -38,12 +40,12 @@ class NoteListPage extends StatelessWidget {
 class _NotesList extends StatelessWidget {
   const _NotesList({
     required this.notes,
-    required this.onEdit,
+    required this.onOpen,
     required this.onDelete,
   });
 
   final List<NoteRecord> notes;
-  final void Function(NoteRecord) onEdit;
+  final void Function(NoteRecord) onOpen;
   final void Function(NoteRecord) onDelete;
 
   @override
@@ -62,7 +64,7 @@ class _NotesList extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          onTap: () => onEdit(note),
+          onTap: () => onOpen(note),
           trailing: IconButton(
             tooltip: l10n.deleteNote,
             icon: const Icon(Icons.delete_outline),
