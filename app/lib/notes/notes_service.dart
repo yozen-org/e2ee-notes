@@ -5,7 +5,7 @@ import '../vault/opened_vault.dart';
 import 'encrypted_operation_log.dart';
 import 'note_record.dart';
 import 'notes_projection.dart';
-import 'room.dart';
+import 'room_key.dart';
 
 final class NotesService {
   NotesService({
@@ -94,11 +94,13 @@ final class NotesService {
   }
 }
 
-NotesService createNotesService(OpenedVault vault) =>
-    NotesService(
-      log: EncryptedOperationLog(
-        store: vault.store,
-        room: Room(id: personalRoomId, key: vault.vaultKey),
-      ),
-      deviceId: vault.deviceId,
-    );
+Future<NotesService> createNotesService(OpenedVault vault) async {
+  final room = await RoomKeyStore(
+    store: vault.store,
+    rootKey: vault.vaultKey,
+  ).loadOrCreate();
+  return NotesService(
+    log: EncryptedOperationLog(store: vault.store, room: room),
+    deviceId: vault.deviceId,
+  );
+}

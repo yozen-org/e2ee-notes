@@ -50,6 +50,6 @@ void main() {
 
     expect(find.text('My note'), findsOneWidget);
     expect(find.text('Private body'), findsOneWidget);
-    expect(store.objects, hasLength(1));
+    expect(store.objects, hasLength(2));
   });
 }

@@ -46,10 +46,13 @@ class _HomePageState extends State<HomePage> {
   Future<KeyPolicy> _requestKeyPolicy(KeyCapabilities capabilities) =>
       showKeyPolicyDialog(context, capabilities);
 
-  void _handleVaultStateChanged() {
-    setState(() {
-      _state = _mapToHomeState(_vaultController.state);
-    });
+  Future<void> _handleVaultStateChanged() async {
+    try {
+      final home = await _mapToHomeState(_vaultController.state);
+      if (mounted) setState(() => _state = home);
+    } catch (error) {
+      if (mounted) setState(() => _state = HomeFailed(error));
+    }
   }
 
   @override
@@ -92,8 +95,8 @@ class _HomeFailedView extends StatelessWidget {
   }
 }
 
-HomeState _mapToHomeState(VaultState state) => switch (state) {
+Future<HomeState> _mapToHomeState(VaultState state) async => switch (state) {
       VaultNotOpened() || VaultOpening() => const HomeLoading(),
       VaultOpenFailed(:final error) => HomeFailed(error),
-      VaultOpened(:final vault) => HomeReady(createNotesService(vault)),
+      VaultOpened(:final vault) => HomeReady(await createNotesService(vault)),
     };
