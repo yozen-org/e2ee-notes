@@ -3,35 +3,36 @@ import 'dart:typed_data';
 
 import '../crypto/encrypted_note_operation.dart';
 import '../storage/blob_store.dart';
+import 'room.dart';
 
 final class EncryptedOperationLog {
   EncryptedOperationLog({
     required BlobStore store,
-    required Uint8List vaultKey,
+    required Room room,
     OperationCipher? cipher,
   }) : _store = store, // ignore: prefer_initializing_formals
-       _vaultKey = Uint8List.fromList(vaultKey),
+       _room = room, // ignore: prefer_initializing_formals
        _cipher = cipher ?? OperationCipher() {
-    if (vaultKey.length != 32) {
+    if (room.key.length != 32) {
       throw ArgumentError.value(
-        vaultKey.length,
-        'vaultKey length',
+        room.key.length,
+        'room key length',
         'must be 32',
       );
     }
   }
 
-  static const operationPrefix = 'operations/';
-
   final BlobStore _store;
-  final Uint8List _vaultKey;
+  final Room _room;
   final OperationCipher _cipher;
+
+  String get _prefix => 'rooms/${_room.id}/operations/';
 
   Future<List<NoteOperation>> readAll() async {
     final operations = <NoteOperation>[];
-    for (final key in await _store.list(operationPrefix)) {
+    for (final key in await _store.list(_prefix)) {
       if (!key.endsWith('.json')) continue;
-      final objectId = key.substring(operationPrefix.length, key.length - 5);
+      final objectId = key.substring(_prefix.length, key.length - 5);
       final decoded = jsonDecode(utf8.decode(await _store.get(key)));
       if (decoded is! Map<String, Object?>) {
         throw const FormatException(
@@ -41,7 +42,7 @@ final class EncryptedOperationLog {
       operations.add(
         await _cipher.decrypt(
           encrypted: EncryptedOperation.fromJson(decoded),
-          vaultKey: _vaultKey,
+          key: _room.key,
           storageObjectId: objectId,
         ),
       );
@@ -59,11 +60,11 @@ final class EncryptedOperationLog {
   Future<void> append(NoteOperation operation) async {
     final encrypted = await _cipher.encrypt(
       operation: operation,
-      vaultKey: _vaultKey,
+      key: _room.key,
       objectId: operation.operationId,
     );
     await _store.putIfAbsent(
-      '$operationPrefix${operation.operationId}.json',
+      '$_prefix${operation.operationId}.json',
       Uint8List.fromList(utf8.encode(jsonEncode(encrypted.toJson()))),
     );
   }

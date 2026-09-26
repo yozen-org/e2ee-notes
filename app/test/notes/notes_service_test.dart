@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:e2ee_notes/notes/encrypted_operation_log.dart';
 import 'package:e2ee_notes/notes/notes_service.dart';
+import 'package:e2ee_notes/notes/room.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
 
 final class MemoryStore implements BlobStore {
@@ -40,7 +41,7 @@ void main() {
     () async {
       final store = MemoryStore();
       final service = NotesService(
-        log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
+        log: EncryptedOperationLog(store: store, room: Room(id: personalRoomId, key: vaultKey)),
         deviceId: deviceId,
         random: Random(7),
         clock: () => DateTime.utc(2026, 9, 7),
@@ -57,7 +58,10 @@ void main() {
       );
 
       expect(store.objects, hasLength(2));
-      expect(store.objects.keys, everyElement(startsWith('operations/')));
+      expect(
+        store.objects.keys,
+        everyElement(startsWith('rooms/$personalRoomId/operations/')),
+      );
       final persisted = store.objects.values.map(utf8.decode).join();
       expect(persisted, isNot(contains('Private')));
       expect(persisted, isNot(contains('secret body')));
@@ -65,7 +69,7 @@ void main() {
       expect(persisted, isNot(contains('new body')));
 
       final reopened = NotesService(
-        log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
+        log: EncryptedOperationLog(store: store, room: Room(id: personalRoomId, key: vaultKey)),
         deviceId: deviceId,
       );
       final notes = await reopened.loadNotes();
@@ -78,7 +82,7 @@ void main() {
   test('delete appends a tombstone and removes note from projection', () async {
     final store = MemoryStore();
     final service = NotesService(
-      log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
+      log: EncryptedOperationLog(store: store, room: Room(id: personalRoomId, key: vaultKey)),
       deviceId: deviceId,
       random: Random(9),
     );
@@ -92,7 +96,7 @@ void main() {
   test('fails closed when an encrypted operation is modified', () async {
     final store = MemoryStore();
     final service = NotesService(
-      log: EncryptedOperationLog(store: store, vaultKey: vaultKey),
+      log: EncryptedOperationLog(store: store, room: Room(id: personalRoomId, key: vaultKey)),
       deviceId: deviceId,
       random: Random(11),
     );

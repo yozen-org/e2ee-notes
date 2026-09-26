@@ -5,6 +5,7 @@ import '../vault/opened_vault.dart';
 import 'encrypted_operation_log.dart';
 import 'note_record.dart';
 import 'notes_projection.dart';
+import 'room.dart';
 
 final class NotesService {
   NotesService({
@@ -95,6 +96,9 @@ final class NotesService {
 
 NotesService createNotesService(OpenedVault vault) =>
     NotesService(
-      log: EncryptedOperationLog(store: vault.store, vaultKey: vault.vaultKey),
+      log: EncryptedOperationLog(
+        store: vault.store,
+        room: Room(id: personalRoomId, key: vault.vaultKey),
+      ),
       deviceId: vault.deviceId,
     );

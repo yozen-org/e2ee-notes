@@ -120,11 +120,11 @@ final class OperationCipher {
 
   Future<EncryptedOperation> encrypt({
     required NoteOperation operation,
-    required Uint8List vaultKey,
+    required Uint8List key,
     required String objectId,
     Uint8List? nonce,
   }) async {
-    _validate(vaultKey, objectId);
+    _validate(key, objectId);
 
     final actualNonce = nonce ?? Uint8List.fromList(_algorithm.newNonce());
     if (actualNonce.length != 12) {
@@ -136,7 +136,7 @@ final class OperationCipher {
     }
     final box = await _algorithm.encrypt(
       operation.encodeCanonical(),
-      secretKey: SecretKey(vaultKey),
+      secretKey: SecretKey(key),
       nonce: actualNonce,
       aad: _aad(objectId),
     );
@@ -149,10 +149,10 @@ final class OperationCipher {
 
   Future<NoteOperation> decrypt({
     required EncryptedOperation encrypted,
-    required Uint8List vaultKey,
+    required Uint8List key,
     required String storageObjectId,
   }) async {
-    _validate(vaultKey, storageObjectId);
+    _validate(key, storageObjectId);
     if (encrypted.objectId != storageObjectId) {
       throw const FormatException('storage and encrypted object IDs differ');
     }
@@ -167,7 +167,7 @@ final class OperationCipher {
         nonce: encrypted.nonce,
         mac: Mac(encrypted.ciphertext.sublist(tagOffset)),
       ),
-      secretKey: SecretKey(vaultKey),
+      secretKey: SecretKey(key),
       aad: _aad(storageObjectId),
     );
     final decoded = jsonDecode(utf8.decode(plaintext));
@@ -183,11 +183,11 @@ final class OperationCipher {
 
   List<int> _aad(String objectId) => utf8.encode('$_aadPrefix$objectId');
 
-  void _validate(Uint8List vaultKey, String objectId) {
-    if (vaultKey.length != 32) {
+  void _validate(Uint8List key, String objectId) {
+    if (key.length != 32) {
       throw ArgumentError.value(
-        vaultKey.length,
-        'vaultKey length',
+        key.length,
+        'key length',
         'must be 32',
       );
     }

@@ -32,7 +32,7 @@ void main() {
 
     final encrypted = await cipher.encrypt(
       operation: operation,
-      vaultKey: _hex(fixture['vaultKeyHex'] as String),
+      key: _hex(fixture['vaultKeyHex'] as String),
       objectId: objectId,
       nonce: _hex(fixture['nonceHex'] as String),
     );
@@ -45,7 +45,7 @@ void main() {
     expect(
       await cipher.decrypt(
         encrypted: encrypted,
-        vaultKey: _hex(fixture['vaultKeyHex'] as String),
+        key: _hex(fixture['vaultKeyHex'] as String),
         storageObjectId: objectId,
       ),
       isA<NoteOperation>()
@@ -59,7 +59,7 @@ void main() {
     final key = Uint8List(32);
     final encrypted = await cipher.encrypt(
       operation: operation,
-      vaultKey: key,
+      key: key,
       objectId: objectId,
     );
     final modified = Uint8List.fromList(encrypted.ciphertext)..[0] ^= 1;
@@ -71,7 +71,7 @@ void main() {
           nonce: encrypted.nonce,
           ciphertext: modified,
         ),
-        vaultKey: key,
+        key: key,
         storageObjectId: objectId,
       ),
       throwsA(isA<SecretBoxAuthenticationError>()),
@@ -83,14 +83,14 @@ void main() {
     final key = Uint8List(32);
     final encrypted = await cipher.encrypt(
       operation: operation,
-      vaultKey: key,
+      key: key,
       objectId: objectId,
     );
 
     await expectLater(
       cipher.decrypt(
         encrypted: encrypted,
-        vaultKey: key,
+        key: key,
         storageObjectId:
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       ),
