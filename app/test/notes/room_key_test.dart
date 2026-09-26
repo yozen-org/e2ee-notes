@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:e2ee_notes/notes/room.dart';
 import 'package:e2ee_notes/notes/room_key.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,7 +40,7 @@ void main() {
       rootKey: rootKey,
       random: Random(7),
     ).loadOrCreate();
-    expect(first.id, personalRoomId);
+    expect(first.id, hasLength(64));
     expect(first.key, hasLength(32));
 
     final reopened = await RoomKeyStore(
@@ -59,9 +58,7 @@ void main() {
       random: Random(7),
     ).loadOrCreate();
 
-    final persisted = utf8.decode(
-      store.objects['rooms/$personalRoomId/room-key.json']!,
-    );
+    final persisted = utf8.decode(store.objects['room.json']!);
     expect(persisted, isNot(contains(base64Encode(room.key))));
     expect(
       jsonDecode(persisted),

@@ -7,25 +7,32 @@ import 'package:cryptography/cryptography.dart';
 import '../storage/blob_store.dart';
 import 'room.dart';
 
-final class EncryptedRoomKey {
-  const EncryptedRoomKey({required this.nonce, required this.ciphertext});
+final class RoomRecord {
+  const RoomRecord({
+    required this.roomId,
+    required this.nonce,
+    required this.ciphertext,
+  });
 
   static const suite = 'AES-256-GCM';
 
+  final String roomId;
   final Uint8List nonce;
   final Uint8List ciphertext;
 
   Map<String, Object> toJson() => {
     'suite': suite,
+    'roomId': roomId,
     'nonce': base64Encode(nonce),
     'ciphertext': base64Encode(ciphertext),
   };
 
-  factory EncryptedRoomKey.fromJson(Map<String, Object?> json) {
+  factory RoomRecord.fromJson(Map<String, Object?> json) {
     if (json['suite'] != suite) {
-      throw const FormatException('unsupported room key format');
+      throw const FormatException('unsupported room record format');
     }
-    return EncryptedRoomKey(
+    return RoomRecord(
+      roomId: json['roomId'] as String,
       nonce: base64Decode(json['nonce'] as String),
       ciphertext: base64Decode(json['ciphertext'] as String),
     );
@@ -40,7 +47,7 @@ final class RoomKeyCipher {
 
   final AesGcm _algorithm;
 
-  Future<EncryptedRoomKey> wrap({
+  Future<RoomRecord> wrap({
     required Uint8List rootKey,
     required Uint8List roomKey,
     required String roomId,
@@ -51,7 +58,8 @@ final class RoomKeyCipher {
       nonce: _algorithm.newNonce(),
       aad: _aad(roomId),
     );
-    return EncryptedRoomKey(
+    return RoomRecord(
+      roomId: roomId,
       nonce: Uint8List.fromList(box.nonce),
       ciphertext: Uint8List.fromList([...box.cipherText, ...box.mac.bytes]),
     );
@@ -59,18 +67,17 @@ final class RoomKeyCipher {
 
   Future<Uint8List> unwrap({
     required Uint8List rootKey,
-    required EncryptedRoomKey wrapped,
-    required String roomId,
+    required RoomRecord record,
   }) async {
-    final tagOffset = wrapped.ciphertext.length - 16;
+    final tagOffset = record.ciphertext.length - 16;
     final clear = await _algorithm.decrypt(
       SecretBox(
-        wrapped.ciphertext.sublist(0, tagOffset),
-        nonce: wrapped.nonce,
-        mac: Mac(wrapped.ciphertext.sublist(tagOffset)),
+        record.ciphertext.sublist(0, tagOffset),
+        nonce: record.nonce,
+        mac: Mac(record.ciphertext.sublist(tagOffset)),
       ),
       secretKey: SecretKey(rootKey),
-      aad: _aad(roomId),
+      aad: _aad(record.roomId),
     );
     return Uint8List.fromList(clear);
   }
@@ -89,7 +96,7 @@ final class RoomKeyStore {
        _cipher = cipher ?? RoomKeyCipher(),
        _random = random ?? Random.secure();
 
-  static const _wrappedKey = 'rooms/$personalRoomId/room-key.json';
+  static const _recordKey = 'room.json';
 
   final BlobStore _store;
   final Uint8List _rootKey;
@@ -97,39 +104,42 @@ final class RoomKeyStore {
   final Random _random;
 
   Future<Room> loadOrCreate() async {
-    if (await _hasWrappedKey()) return _unwrap();
+    if (await _hasRecord()) return _open();
     return _create();
   }
 
-  Future<bool> _hasWrappedKey() async =>
-      (await _store.list(_wrappedKey)).contains(_wrappedKey);
+  Future<bool> _hasRecord() async =>
+      (await _store.list(_recordKey)).contains(_recordKey);
 
-  Future<Room> _unwrap() async {
-    final decoded = jsonDecode(utf8.decode(await _store.get(_wrappedKey)));
+  Future<Room> _open() async {
+    final decoded = jsonDecode(utf8.decode(await _store.get(_recordKey)));
     if (decoded is! Map<String, Object?>) {
-      throw const FormatException('room key must be a JSON object');
+      throw const FormatException('room record must be a JSON object');
     }
-    final key = await _cipher.unwrap(
-      rootKey: _rootKey,
-      wrapped: EncryptedRoomKey.fromJson(decoded),
-      roomId: personalRoomId,
-    );
-    return Room(id: personalRoomId, key: key);
+    final record = RoomRecord.fromJson(decoded);
+    final key = await _cipher.unwrap(rootKey: _rootKey, record: record);
+    return Room(id: record.roomId, key: key);
   }
 
   Future<Room> _create() async {
+    final roomId = _identifier();
     final roomKey = Uint8List.fromList(
       List<int>.generate(32, (_) => _random.nextInt(256)),
     );
-    final wrapped = await _cipher.wrap(
+    final record = await _cipher.wrap(
       rootKey: _rootKey,
       roomKey: roomKey,
-      roomId: personalRoomId,
+      roomId: roomId,
     );
     await _store.putIfAbsent(
-      _wrappedKey,
-      Uint8List.fromList(utf8.encode(jsonEncode(wrapped.toJson()))),
+      _recordKey,
+      Uint8List.fromList(utf8.encode(jsonEncode(record.toJson()))),
     );
-    return Room(id: personalRoomId, key: roomKey);
+    return Room(id: roomId, key: roomKey);
+  }
+
+  String _identifier() {
+    final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
+    return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 }
