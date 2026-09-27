@@ -22,17 +22,17 @@ void main() {
       vaultOpener: CallbackVaultOpener((_) => opening.future),
     );
 
-    expect(controller.state, isA<VaultNotOpened>());
+    expect(controller.value, isA<VaultNotOpened>());
 
     final result = controller.open(
       requestKeyPolicy: (_) async => const KeyPolicy(allowSoftware: true),
     );
-    expect(controller.state, isA<VaultOpening>());
+    expect(controller.value, isA<VaultOpening>());
 
     opening.complete(vault);
     await result;
-    expect(controller.state, isA<VaultOpened>());
-    expect((controller.state as VaultOpened).vault, same(vault));
+    expect(controller.value, isA<VaultOpened>());
+    expect((controller.value as VaultOpened).vault, same(vault));
 
     controller.dispose();
   });
@@ -55,10 +55,10 @@ void main() {
         const KeyPolicy(allowSoftware: true);
 
     await controller.open(requestKeyPolicy: requestPolicy);
-    expect(controller.state, isA<VaultOpenFailed>());
+    expect(controller.value, isA<VaultOpenFailed>());
 
     await controller.open(requestKeyPolicy: requestPolicy);
-    expect(controller.state, isA<VaultOpened>());
+    expect(controller.value, isA<VaultOpened>());
     expect(attempts, 2);
 
     controller.dispose();

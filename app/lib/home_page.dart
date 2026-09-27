@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _vaultController = VaultController(vaultOpener: widget.vaultOpener)
-      ..addListener(_handleVaultStateChanged);
+      ..addListener(_onVaultChanged);
     _scheduleVaultOpening();
   }
 
@@ -65,10 +65,19 @@ class _HomePageState extends State<HomePage> {
   Future<KeyPolicy> _requestKeyPolicy(KeyCapabilities capabilities) =>
       showKeyPolicyDialog(context, capabilities);
 
-  Future<void> _handleVaultStateChanged() async {
+  void _onVaultChanged() {
+    _transition(_vaultController.value);
+  }
+
+  Future<void> _transition(VaultState event) async {
     try {
-      final home = await _mapToHomeState(_vaultController.state);
-      if (mounted) setState(() => _state = home);
+      final next = switch (event) {
+        VaultNotOpened() || VaultOpening() => const _HomeLoading(),
+        VaultOpenFailed(:final error) => _HomeFailed(error),
+        VaultOpened(:final vault) =>
+          _HomeReady(await createNotesService(vault)),
+      };
+      if (mounted) setState(() => _state = next);
     } catch (error) {
       if (mounted) setState(() => _state = _HomeFailed(error));
     }
@@ -113,9 +122,3 @@ class _HomeFailedView extends StatelessWidget {
     );
   }
 }
-
-Future<_HomeState> _mapToHomeState(VaultState state) async => switch (state) {
-      VaultNotOpened() || VaultOpening() => const _HomeLoading(),
-      VaultOpenFailed(:final error) => _HomeFailed(error),
-      VaultOpened(:final vault) => _HomeReady(await createNotesService(vault)),
-    };
