@@ -1,11 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../logic/note_record.dart';
+import '../logic/notes_service.dart';
 import 'note_detail_page.dart';
 import 'note_list_page.dart';
-import '../logic/note_record.dart';
-import 'notes_state.dart';
-import '../logic/notes_service.dart';
+
+sealed class _NotesState {
+  const _NotesState();
+}
+
+final class _NotesLoading extends _NotesState {
+  const _NotesLoading();
+}
+
+final class _NotesFailed extends _NotesState {
+  const _NotesFailed(this.error);
+
+  final Object error;
+}
+
+final class _NotesReady extends _NotesState {
+  const _NotesReady(this.notes);
+
+  final List<NoteRecord> notes;
+}
 
 class NotesHomePage extends StatefulWidget {
   const NotesHomePage({required this.service, super.key});
@@ -17,7 +36,7 @@ class NotesHomePage extends StatefulWidget {
 }
 
 class _NotesHomePageState extends State<NotesHomePage> {
-  NotesState _state = const NotesLoading();
+  _NotesState _state = const _NotesLoading();
 
   @override
   void initState() {
@@ -28,14 +47,14 @@ class _NotesHomePageState extends State<NotesHomePage> {
   Future<void> _load() async {
     try {
       final notes = await widget.service.loadNotes();
-      if (mounted) setState(() => _state = NotesReady(notes));
+      if (mounted) setState(() => _state = _NotesReady(notes));
     } catch (error) {
-      if (mounted) setState(() => _state = NotesFailed(error));
+      if (mounted) setState(() => _state = _NotesFailed(error));
     }
   }
 
   Future<void> _reload() async {
-    setState(() => _state = const NotesLoading());
+    setState(() => _state = const _NotesLoading());
     await _load();
   }
 
@@ -58,11 +77,11 @@ class _NotesHomePageState extends State<NotesHomePage> {
 
   @override
   Widget build(BuildContext context) => switch (_state) {
-        NotesLoading() => const Scaffold(
+        _NotesLoading() => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
-        NotesFailed(:final error) => _NotesFailedView(error: error),
-        NotesReady(:final notes) => NoteListPage(
+        _NotesFailed(:final error) => _NotesFailedView(error: error),
+        _NotesReady(:final notes) => NoteListPage(
           notes: notes,
           onOpen: _openDetail,
           onCreate: () => _openDetail(null),

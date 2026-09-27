@@ -1,14 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
-import 'home_state.dart';
 import 'l10n/app_localizations.dart';
-import 'notes/ui/notes_home_page.dart';
 import 'notes/logic/notes_service.dart';
+import 'notes/ui/notes_home_page.dart';
 import 'vault/key_policy/key_policy_dialog.dart';
 import 'vault/vault_controller/vault_controller.dart';
 import 'vault/vault_controller/vault_state.dart';
 import 'vault/vault_opener/vault_opener.dart';
+
+sealed class _HomeState {
+  const _HomeState();
+}
+
+final class _HomeLoading extends _HomeState {
+  const _HomeLoading();
+}
+
+final class _HomeFailed extends _HomeState {
+  const _HomeFailed(this.error);
+
+  final Object error;
+}
+
+final class _HomeReady extends _HomeState {
+  const _HomeReady(this.service);
+
+  final NotesService service;
+}
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -24,7 +43,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final VaultController _vaultController;
-  HomeState _state = const HomeLoading();
+  _HomeState _state = const _HomeLoading();
 
   @override
   void initState() {
@@ -51,7 +70,7 @@ class _HomePageState extends State<HomePage> {
       final home = await _mapToHomeState(_vaultController.state);
       if (mounted) setState(() => _state = home);
     } catch (error) {
-      if (mounted) setState(() => _state = HomeFailed(error));
+      if (mounted) setState(() => _state = _HomeFailed(error));
     }
   }
 
@@ -63,12 +82,12 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) => switch (_state) {
-        HomeLoading() => const Scaffold(
+        _HomeLoading() => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
-        HomeFailed(:final error) =>
+        _HomeFailed(:final error) =>
           _HomeFailedView(error: error, onRetry: _openVault),
-        HomeReady(:final service) => NotesHomePage(service: service),
+        _HomeReady(:final service) => NotesHomePage(service: service),
       };
 }
 
@@ -95,8 +114,8 @@ class _HomeFailedView extends StatelessWidget {
   }
 }
 
-Future<HomeState> _mapToHomeState(VaultState state) async => switch (state) {
-      VaultNotOpened() || VaultOpening() => const HomeLoading(),
-      VaultOpenFailed(:final error) => HomeFailed(error),
-      VaultOpened(:final vault) => HomeReady(await createNotesService(vault)),
+Future<_HomeState> _mapToHomeState(VaultState state) async => switch (state) {
+      VaultNotOpened() || VaultOpening() => const _HomeLoading(),
+      VaultOpenFailed(:final error) => _HomeFailed(error),
+      VaultOpened(:final vault) => _HomeReady(await createNotesService(vault)),
     };
