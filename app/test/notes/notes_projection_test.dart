@@ -1,5 +1,5 @@
 import 'package:e2ee_notes/crypto/encrypted_note_operation.dart';
-import 'package:e2ee_notes/notes/notes_projection.dart';
+import 'package:e2ee_notes/notes/logic/notes_projection.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 NoteOperation op({

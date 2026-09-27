@@ -7,7 +7,7 @@ import 'package:secure_keys/secure_keys.dart';
 import 'package:secure_keys/src/secure_enclave/secure_enclave_secure_key.dart';
 import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
-import 'package:e2ee_notes/notes/notes_service.dart';
+import 'package:e2ee_notes/notes/logic/notes_service.dart';
 import 'package:e2ee_notes/vault/vault_opener/filesystem_vault_opener.dart';
 import 'package:e2ee_notes/vault/file_vault_key_storage.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';

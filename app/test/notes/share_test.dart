@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:e2ee_notes/notes/share.dart';
+import 'package:e2ee_notes/notes/logic/share.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

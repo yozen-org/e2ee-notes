@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:e2ee_notes/notes/room_key.dart';
+import 'package:e2ee_notes/notes/logic/room_key.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 

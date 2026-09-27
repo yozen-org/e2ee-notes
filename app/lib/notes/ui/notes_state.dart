@@ -1,4 +1,4 @@
-import 'note_record.dart';
+import '../logic/note_record.dart';
 
 sealed class NotesState {
   const NotesState();

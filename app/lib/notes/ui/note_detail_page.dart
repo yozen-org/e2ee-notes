@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
-import 'note_record.dart';
-import 'notes_service.dart';
+import '../../l10n/app_localizations.dart';
+import '../logic/note_record.dart';
+import '../logic/notes_service.dart';
 
 class NoteDetailPage extends StatefulWidget {
   const NoteDetailPage({

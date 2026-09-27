@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
-import 'note_record.dart';
+import '../../l10n/app_localizations.dart';
+import '../logic/note_record.dart';
 
 class NoteListPage extends StatelessWidget {
   const NoteListPage({

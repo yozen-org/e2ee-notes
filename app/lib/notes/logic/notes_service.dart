@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import '../crypto/encrypted_note_operation.dart';
-import '../vault/opened_vault.dart';
+import '../../../crypto/encrypted_note_operation.dart';
+import '../../../vault/opened_vault.dart';
 import 'encrypted_operation_log.dart';
 import 'note_record.dart';
 import 'notes_projection.dart';

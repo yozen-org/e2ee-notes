@@ -1,4 +1,4 @@
-import 'notes/notes_service.dart';
+import 'notes/logic/notes_service.dart';
 
 sealed class HomeState {
   const HomeState();

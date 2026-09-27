@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../crypto/encrypted_note_operation.dart';
-import '../storage/blob_store.dart';
+import '../../../crypto/encrypted_note_operation.dart';
+import '../../../storage/blob_store.dart';
 import 'room.dart';
 
 final class EncryptedOperationLog {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
+import '../../l10n/app_localizations.dart';
 import 'note_detail_page.dart';
 import 'note_list_page.dart';
-import 'note_record.dart';
+import '../logic/note_record.dart';
 import 'notes_state.dart';
-import 'notes_service.dart';
+import '../logic/notes_service.dart';
 
 class NotesHomePage extends StatefulWidget {
   const NotesHomePage({required this.service, super.key});

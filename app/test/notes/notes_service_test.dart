@@ -3,9 +3,9 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:e2ee_notes/notes/encrypted_operation_log.dart';
-import 'package:e2ee_notes/notes/notes_service.dart';
-import 'package:e2ee_notes/notes/room.dart';
+import 'package:e2ee_notes/notes/logic/encrypted_operation_log.dart';
+import 'package:e2ee_notes/notes/logic/notes_service.dart';
+import 'package:e2ee_notes/notes/logic/room.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
 
 final class MemoryStore implements BlobStore {

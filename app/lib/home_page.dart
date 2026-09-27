@@ -3,8 +3,8 @@ import 'package:secure_keys/secure_keys.dart';
 
 import 'home_state.dart';
 import 'l10n/app_localizations.dart';
-import 'notes/notes_home_page.dart';
-import 'notes/notes_service.dart';
+import 'notes/ui/notes_home_page.dart';
+import 'notes/logic/notes_service.dart';
 import 'vault/key_policy/key_policy_dialog.dart';
 import 'vault/vault_controller/vault_controller.dart';
 import 'vault/vault_controller/vault_state.dart';

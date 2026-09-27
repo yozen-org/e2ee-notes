@@ -1,4 +1,4 @@
-import '../crypto/encrypted_note_operation.dart';
+import '../../../crypto/encrypted_note_operation.dart';
 import 'note_record.dart';
 
 final class NotesProjection {

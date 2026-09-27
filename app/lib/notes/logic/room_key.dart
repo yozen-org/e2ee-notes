@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
-import '../storage/blob_store.dart';
+import '../../../storage/blob_store.dart';
 import 'room.dart';
 
 final class RoomRecord {
