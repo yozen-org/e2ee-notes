@@ -65,13 +65,9 @@ class _HomePageState extends State<HomePage> {
   Future<KeyPolicy> _requestKeyPolicy(KeyCapabilities capabilities) =>
       showKeyPolicyDialog(context, capabilities);
 
-  void _onVaultChanged() {
-    _transition(_vaultController.value);
-  }
-
-  Future<void> _transition(VaultState event) async {
+  Future<void> _onVaultChanged() async {
     try {
-      final next = switch (event) {
+      final next = switch (_vaultController.value) {
         VaultNotOpened() || VaultOpening() => const _HomeLoading(),
         VaultOpenFailed(:final error) => _HomeFailed(error),
         VaultOpened(:final vault) =>
