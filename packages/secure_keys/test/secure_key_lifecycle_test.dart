@@ -3,23 +3,27 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
+import 'package:secure_keys/src/keystore/android_keystore_secure_key.dart';
 import 'package:secure_keys/src/secure_enclave/secure_enclave_secure_key.dart';
 import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
 
+import 'support/fake_android_keystore_keys.dart';
 import 'support/fake_secure_enclave_keys.dart';
 import 'support/fake_tpm_keys.dart';
 
 void main() {
   const hardware = KeyPolicy();
   const software = KeyPolicy(allowSoftware: true);
-  for (final provider in ['apple', 'tpm']) {
+  for (final provider in ['apple', 'tpm', 'android']) {
     test(
       '$provider returns a 32-byte key and opens a serialized record',
       () async {
-        final adapter = provider == 'apple'
-            ? SecureEnclaveSecureKey(FakeSecureEnclaveKeys())
-            : TpmSecureKey(FakeTpmKeys());
+        final adapter = switch (provider) {
+          'apple' => SecureEnclaveSecureKey(FakeSecureEnclaveKeys()),
+          'android' => AndroidKeystoreSecureKey(FakeAndroidKeystoreKeys()),
+          _ => TpmSecureKey(FakeTpmKeys()),
+        };
         final keys = PlatformSecureKey.withHardware(adapter);
         final generated = await keys.generate(policy: hardware);
         expect(generated.vaultKey, hasLength(32));
@@ -84,6 +88,13 @@ void main() {
       throwsUnsupportedError,
     );
     expect(tpm.keys, isEmpty);
+    final android = FakeAndroidKeystoreKeys();
+    await expectLater(
+      PlatformSecureKey.withHardware(AndroidKeystoreSecureKey(android))
+          .generate(policy: const KeyPolicy(requireUserPresence: true)),
+      throwsUnsupportedError,
+    );
+    expect(android.keys, isEmpty);
   });
   test(
     'sharing uses the recipient public key and restores the same vault key',
@@ -108,6 +119,14 @@ void main() {
   );
   test('TPM advertises sharing as unsupported', () async {
     final keys = PlatformSecureKey.withHardware(TpmSecureKey(FakeTpmKeys()));
+    expect((await keys.capabilities()).sharing, isFalse);
+    final generated = await keys.generate(policy: hardware);
+    await expectLater(keys.publicKey(generated.record), throwsUnsupportedError);
+  });
+  test('Android Keystore advertises sharing as unsupported', () async {
+    final keys = PlatformSecureKey.withHardware(
+      AndroidKeystoreSecureKey(FakeAndroidKeystoreKeys()),
+    );
     expect((await keys.capabilities()).sharing, isFalse);
     final generated = await keys.generate(policy: hardware);
     await expectLater(keys.publicKey(generated.record), throwsUnsupportedError);
