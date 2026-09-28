@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:e2ee_notes/home_page.dart';
+import 'package:e2ee_notes/bootstrap.dart';
 import 'package:e2ee_notes/l10n/app_localizations.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +20,7 @@ void main() {
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: HomePage(
+          home: Bootstrap(
             vaultOpener: CallbackVaultOpener((requestPolicy) async {
               attempts++;
               if (attempts == 1) throw StateError('failed');

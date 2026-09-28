@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'home_page.dart';
+import 'bootstrap.dart';
 import 'l10n/app_localizations.dart';
 import 'vault/vault_opener/vault_opener.dart';
 
@@ -23,7 +23,7 @@ class App extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff395b64)),
         useMaterial3: true,
       ),
-      home: HomePage(vaultOpener: vaultOpener),
+      home: Bootstrap(vaultOpener: vaultOpener),
     );
   }
 }

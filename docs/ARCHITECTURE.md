@@ -63,22 +63,20 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 
 ```text
 main（本番依存の組み立て）
-  ├─ App
-  │    └─ HomePage（Vault状態に応じた画面選択）
-  │         ├─ KeyPolicyDialog → RequestKeyPolicy
-  │         ├─ VaultController（ロード・失敗・再試行）
-  │         └─ NotesRepositoryFactory → NotesHomePage
-  └─ VaultOpener → FilesystemVaultOpener
-       ├─ VaultKeyService
-       │    ├─ SecureKey → PlatformSecureKey → OS の実装
-       │    └─ VaultKeyStorage → FileVaultKeyStorage
-       ├─ BlobStore → FilesystemBlobStore
-       └─ OpenedVault
+  └─ App
+       └─ Bootstrap（Vaultを開き、NotesServiceを構築してNotesHomePageへ遷移）
+            ├─ KeyPolicyDialog → RequestKeyPolicy
+            └─ VaultOpener → FilesystemVaultOpener
+                 ├─ VaultKeyService
+                 │    ├─ SecureKey → PlatformSecureKey → OS の実装
+                 │    └─ VaultKeyStorage → FileVaultKeyStorage
+                 ├─ BlobStore → FilesystemBlobStore
+                 └─ OpenedVault → createNotesService → NotesService → NotesHomePage
 ```
 
 `VaultOpener`は鍵・端末ID・`BlobStore`を持つ`OpenedVault`を返し、
-ノートRepositoryを構築しません。`NotesRepositoryFactory`が
-`OpenedVault`から`EncryptedNotesRepository`を構築します。
+ノートのServiceを構築しません。`createNotesService`が`OpenedVault`から
+`NotesService`を構築します（ルーム鍵の読込・生成を含む）。
 
 `secure_keys` がハードウェアの選択、能力確認、鍵の生成・保護・復元、
 保存形式の解釈を担当します。アプリは `SecureKey` の共通契約を使います。
