@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "org.yozen.e2ee_notes"
+    namespace = "org.yozen.e2eedocs"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
 
-        applicationId = "org.yozen.e2ee_notes"
+        applicationId = "org.yozen.e2eedocs"
 
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion

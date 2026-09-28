@@ -1,4 +1,4 @@
-package org.yozen.e2ee_notes
+package org.yozen.e2eedocs
 
 import io.flutter.embedding.android.FlutterActivity
 
