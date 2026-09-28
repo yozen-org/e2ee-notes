@@ -26,16 +26,16 @@ final class _NotesReady extends _NotesState {
   final List<NoteRecord> notes;
 }
 
-class NotesHomePage extends StatefulWidget {
-  const NotesHomePage({required this.service, super.key});
+class NotesScreen extends StatefulWidget {
+  const NotesScreen({required this.service, super.key});
 
   final NotesService service;
 
   @override
-  State<NotesHomePage> createState() => _NotesHomePageState();
+  State<NotesScreen> createState() => _NotesScreenState();
 }
 
-class _NotesHomePageState extends State<NotesHomePage> {
+class _NotesScreenState extends State<NotesScreen> {
   _NotesState _state = const _NotesLoading();
 
   @override

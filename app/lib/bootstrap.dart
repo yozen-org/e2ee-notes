@@ -3,7 +3,7 @@ import 'package:secure_keys/secure_keys.dart';
 
 import 'l10n/app_localizations.dart';
 import 'notes/logic/notes_service.dart';
-import 'notes/ui/notes_home_page.dart';
+import 'notes/ui/notes_screen.dart';
 import 'vault/key_policy/key_policy_dialog.dart';
 import 'vault/vault_opener/vault_opener.dart';
 
@@ -36,7 +36,7 @@ class _BootstrapState extends State<Bootstrap> {
       final service = await createNotesService(vault);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => NotesHomePage(service: service)),
+        MaterialPageRoute(builder: (_) => NotesScreen(service: service)),
       );
     } catch (error) {
       if (mounted) setState(() => _error = error);

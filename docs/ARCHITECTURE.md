@@ -64,14 +64,14 @@ TPMで保護済みの鍵が復元できない場合は、フォールバック�
 ```text
 main（本番依存の組み立て）
   └─ App
-       └─ Bootstrap（Vaultを開き、NotesServiceを構築してNotesHomePageへ遷移）
+       └─ Bootstrap（Vaultを開き、NotesServiceを構築してNotesScreenへ遷移）
             ├─ KeyPolicyDialog → RequestKeyPolicy
             └─ VaultOpener → FilesystemVaultOpener
                  ├─ VaultKeyService
                  │    ├─ SecureKey → PlatformSecureKey → OS の実装
                  │    └─ VaultKeyStorage → FileVaultKeyStorage
                  ├─ BlobStore → FilesystemBlobStore
-                 └─ OpenedVault → createNotesService → NotesService → NotesHomePage
+                 └─ OpenedVault → createNotesService → NotesService → NotesScreen
 ```
 
 `VaultOpener`は鍵・端末ID・`BlobStore`を持つ`OpenedVault`を返し、
