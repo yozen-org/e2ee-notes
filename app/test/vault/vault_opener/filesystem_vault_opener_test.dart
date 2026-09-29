@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
 import 'package:secure_keys/src/envelope_secure_key.dart';
-import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
 import 'package:e2ee_notes/notes/logic/notes_service.dart';
 import 'package:e2ee_notes/vault/vault_opener/filesystem_vault_opener.dart';
@@ -39,7 +38,9 @@ void main() {
   setUp(() async {
     root = await Directory.systemTemp.createTemp('vault-lifecycle-');
     tpm = FakeTpmKeys();
-    keys = PlatformSecureKey.withHardware(TpmSecureKey(tpm));
+    keys = PlatformSecureKey.withHardware(
+      EnvelopeSecureKey(backend: tpm, provider: 'tpm'),
+    );
     permissions = 0;
   });
   tearDown(() => root.delete(recursive: true));
@@ -78,23 +79,13 @@ void main() {
       final key = await openKey();
       await file('vault-key.bin').writeAsBytes(key);
       await file('vault-key.json').delete();
-      keys = PlatformSecureKey.withHardware(TpmSecureKey(tpm));
+      keys = PlatformSecureKey.withHardware(
+        EnvelopeSecureKey(backend: tpm, provider: 'tpm'),
+      );
       final restored = await openNotes();
       expect((await restored.loadNotes()).single.body, 'Keep this note');
       expect(await openKey(), key);
       expect(await file('vault-key.bin').exists(), isFalse);
-    },
-  );
-  test(
-    'existing legacy TPM state imports without generating another key',
-    () async {
-      final key = Uint8List.fromList(List.generate(32, (i) => i));
-      final blob = await tpm.protect(key);
-      await file('vault-key.tpm').writeAsBytes(blob);
-      expect(await openKey(), key);
-      expect(permissions, 0);
-      expect(tpm.keys, hasLength(1));
-      expect(await openKey(), key);
     },
   );
   test(
@@ -132,10 +123,10 @@ void main() {
     test('$failure failure retains the original legacy key', () async {
       final original = Uint8List(32);
       await file('vault-key.bin').writeAsBytes(original);
-      if (failure == 'protect') {
-        tpm.beforeProtect = () async => throw StateError('failed');
-      }
-      if (failure == 'verify') tpm.transformRestored = (key) => key..[0] ^= 1;
+    if (failure == 'protect') {
+      tpm.beforeCreate = () async => throw StateError('failed');
+    }
+    if (failure == 'verify') tpm.transformSharedSecret = (s) => s..[0] ^= 1;
       if (failure == 'persist') {
         await Directory(file('vault-key.json').path).create();
       }
@@ -146,7 +137,6 @@ void main() {
   for (final name in [
     'recipient-key.handle',
     'vault-key.envelope.json',
-    'vault-key.tpm',
   ]) {
     test('invalid legacy state stops creation: $name', () async {
       await file(name).writeAsBytes([1]);

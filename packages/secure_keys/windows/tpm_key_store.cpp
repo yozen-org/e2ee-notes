@@ -6,16 +6,15 @@
 #include <tbs.h>
 
 #include <algorithm>
-#include <array>
+#include <cstring>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace secure_keys {
 namespace {
 
-constexpr wchar_t kWrappingKeyName[] = L"yozen.e2ee-notes.vault-wrap.v1";
-constexpr std::array<uint8_t, 4> kHeader = {'E', 'T', 'W', 1};
-constexpr DWORD kRsaBits = 2048;
+constexpr size_t kP256Bytes = 32;
 
 void Check(SECURITY_STATUS status, const char* operation) {
   if (status != ERROR_SUCCESS) {
@@ -50,68 +49,100 @@ void OpenProvider(CngObject& provider) {
   }
 }
 
-void SetDword(NCRYPT_HANDLE key, const wchar_t* property, DWORD value) {
-  Check(NCryptSetProperty(key, property, reinterpret_cast<PBYTE>(&value),
-                         sizeof(value), 0), "Configure TPM key");
+std::wstring NewKeyName() {
+  GUID guid{};
+  Check(CoCreateGuid(&guid), "Generate key name");
+  wchar_t buffer[40];
+  swprintf_s(buffer, L"recipient-%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1],
+             guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5],
+             guid.Data4[6], guid.Data4[7]);
+  return std::wstring(buffer);
 }
 
-void ValidateWrappingKey(NCRYPT_KEY_HANDLE key) {
-  if (ReadDword(key, NCRYPT_LENGTH_PROPERTY) != kRsaBits ||
-      ReadDword(key, NCRYPT_EXPORT_POLICY_PROPERTY) != 0) {
-    throw std::runtime_error("Unexpected TPM wrapping-key properties");
+void CreateRecipientKey(NCRYPT_PROV_HANDLE provider, const std::wstring& name,
+                        CngObject& key) {
+  Check(NCryptCreatePersistedKey(provider, &key.value, NCRYPT_ECDH_P256_ALGORITHM,
+                                 name.c_str(), 0, 0), "Create TPM recipient key");
+  Check(NCryptFinalizeKey(key.value, NCRYPT_SILENT_FLAG), "Persist TPM recipient key");
+}
+
+void OpenRecipientKeyByName(NCRYPT_PROV_HANDLE provider, const std::wstring& name,
+                            CngObject& key) {
+  Check(NCryptOpenKey(provider, &key.value, name.c_str(), 0, NCRYPT_SILENT_FLAG),
+        "Open TPM recipient key");
+}
+
+// Exports the public key as a 65-byte X9.63 uncompressed point.
+std::vector<uint8_t> ExportPublicKey(NCRYPT_KEY_HANDLE key) {
+  DWORD size = 0;
+  Check(NCryptExportKey(key, nullptr, BCRYPT_ECCPUBLIC_BLOB, nullptr, nullptr, 0,
+                        &size, 0), "Measure recipient public key");
+  std::vector<uint8_t> blob(size);
+  Check(NCryptExportKey(key, nullptr, BCRYPT_ECCPUBLIC_BLOB, nullptr, blob.data(),
+                        size, &size, 0), "Export recipient public key");
+  const auto* header = reinterpret_cast<const BCRYPT_ECCPUBLIC_BLOB*>(blob.data());
+  const auto* x = blob.data() + sizeof(BCRYPT_ECCPUBLIC_BLOB);
+  const auto* y = x + header->cbKey;
+  std::vector<uint8_t> encoded(kP256Bytes * 2 + 1);
+  encoded[0] = 0x04;
+  std::reverse_copy(x, x + kP256Bytes, encoded.begin() + 1);
+  std::reverse_copy(y, y + kP256Bytes, encoded.begin() + 1 + kP256Bytes);
+  return encoded;
+}
+
+// Imports a 65-byte X9.63 point as a transient peer key.
+void ImportPeerPublicKey(NCRYPT_PROV_HANDLE provider,
+                         const std::vector<uint8_t>& x963, CngObject& peer) {
+  if (x963.size() != kP256Bytes * 2 + 1 || x963[0] != 0x04) {
+    throw std::invalid_argument("Invalid X9.63 public key");
   }
+  std::vector<uint8_t> blob(sizeof(BCRYPT_ECCPUBLIC_BLOB) + kP256Bytes * 2);
+  auto* header = reinterpret_cast<BCRYPT_ECCPUBLIC_BLOB*>(blob.data());
+  header->dwMagic = BCRYPT_ECDH_PUBLIC_P256_MAGIC;
+  header->cbKey = kP256Bytes;
+  std::reverse_copy(x963.begin() + 1, x963.begin() + 1 + kP256Bytes,
+                    blob.begin() + sizeof(BCRYPT_ECCPUBLIC_BLOB));
+  std::reverse_copy(x963.begin() + 1 + kP256Bytes, x963.end(),
+                    blob.begin() + sizeof(BCRYPT_ECCPUBLIC_BLOB) + kP256Bytes);
+  Check(NCryptImportKey(provider, nullptr, BCRYPT_ECCPUBLIC_BLOB, nullptr,
+                        &peer.value, blob.data(), static_cast<DWORD>(blob.size()), 0),
+        "Import peer public key");
 }
 
-void CreateWrappingKey(NCRYPT_PROV_HANDLE provider, CngObject& key) {
-  Check(NCryptCreatePersistedKey(provider, &key.value, NCRYPT_RSA_ALGORITHM,
-                                kWrappingKeyName, 0, 0), "Create TPM wrapping key");
-  SetDword(key.value, NCRYPT_LENGTH_PROPERTY, kRsaBits);
-  SetDword(key.value, NCRYPT_KEY_USAGE_PROPERTY, NCRYPT_ALLOW_DECRYPT_FLAG);
-  Check(NCryptFinalizeKey(key.value, NCRYPT_SILENT_FLAG), "Persist TPM wrapping key");
-}
-
-void OpenOrCreateWrappingKey(NCRYPT_PROV_HANDLE provider, CngObject& key) {
-  const auto status = NCryptOpenKey(provider, &key.value, kWrappingKeyName, 0,
-                                   NCRYPT_SILENT_FLAG);
-  if (status == NTE_BAD_KEYSET || status == NTE_NOT_FOUND) {
-    CreateWrappingKey(provider, key);
-  } else {
-    Check(status, "Open TPM wrapping key");
+// Computes the ECDH shared secret (the X coordinate, big-endian, left-padded).
+std::vector<uint8_t> ComputeSharedSecret(NCRYPT_KEY_HANDLE key,
+                                         NCRYPT_KEY_HANDLE peer) {
+  NCRYPT_SECRET_HANDLE secret = 0;
+  Check(NCryptSecretAgreement(key, peer, &secret, 0), "Compute ECDH shared secret");
+  std::vector<uint8_t> buffer(kP256Bytes);
+  DWORD size = 0;
+  const auto status = NCryptDeriveKey(secret, BCRYPT_KDF_RAW_SECRET, nullptr,
+                                      buffer.data(), kP256Bytes, &size, 0);
+  NCryptFreeObject(secret);
+  Check(status, "Derive ECDH shared secret");
+  if (size == 0 || size > kP256Bytes) {
+    throw std::runtime_error("Invalid shared secret length");
   }
-  ValidateWrappingKey(key.value);
+  std::vector<uint8_t> shared(kP256Bytes);
+  std::memcpy(shared.data() + (kP256Bytes - size), buffer.data(), size);
+  return shared;
 }
 
-std::vector<uint8_t> EncryptKey(NCRYPT_KEY_HANDLE key, const std::vector<uint8_t>& input) {
-  BCRYPT_OAEP_PADDING_INFO padding{BCRYPT_SHA256_ALGORITHM, nullptr, 0};
-  std::vector<uint8_t> output(kRsaBits / 8);
-  DWORD written = 0;
-  Check(NCryptEncrypt(key, const_cast<PBYTE>(input.data()),
-                      static_cast<DWORD>(input.size()), &padding, output.data(),
-                      static_cast<DWORD>(output.size()), &written,
-                      NCRYPT_PAD_OAEP_FLAG | NCRYPT_SILENT_FLAG), "Wrap vault key");
-  if (written != output.size()) throw std::runtime_error("Invalid wrapped-key length");
-  return output;
-}
-
-std::vector<uint8_t> DecryptKey(NCRYPT_KEY_HANDLE key, const std::vector<uint8_t>& input) {
-  BCRYPT_OAEP_PADDING_INFO padding{BCRYPT_SHA256_ALGORITHM, nullptr, 0};
-  std::array<uint8_t, kRsaBits / 8> plaintext{};
-  DWORD written = 0;
-  const auto status = NCryptDecrypt(
-      key, const_cast<PBYTE>(input.data() + kHeader.size()), kRsaBits / 8,
-      &padding, plaintext.data(), static_cast<DWORD>(plaintext.size()), &written,
-      NCRYPT_PAD_OAEP_FLAG | NCRYPT_SILENT_FLAG);
-  std::vector<uint8_t> result;
-  if (status == ERROR_SUCCESS && written == 32) {
-    result.assign(plaintext.begin(), plaintext.begin() + written);
+std::wstring NameFromHandle(const std::vector<uint8_t>& handle) {
+  if (handle.size() % sizeof(wchar_t) != 0 || handle.empty()) {
+    throw std::invalid_argument("Invalid key handle");
   }
-  SecureZeroMemory(plaintext.data(), plaintext.size());
-  Check(status, "Unwrap vault key");
-  if (result.size() != 32) throw std::runtime_error("Invalid vault-key length");
-  return result;
+  return std::wstring(reinterpret_cast<const wchar_t*>(handle.data()),
+                      handle.size() / sizeof(wchar_t));
 }
 
+std::vector<uint8_t> HandleFromName(const std::wstring& name) {
+  const auto* bytes = reinterpret_cast<const uint8_t*>(name.data());
+  return std::vector<uint8_t>(bytes, bytes + name.size() * sizeof(wchar_t));
 }
+
+}  // namespace
 
 bool TpmKeyStore::IsAvailable() const {
   TPM_DEVICE_INFO info{};
@@ -125,31 +156,34 @@ bool TpmKeyStore::IsAvailable() const {
   return true;
 }
 
-std::vector<uint8_t> TpmKeyStore::Protect(const std::vector<uint8_t>& vault_key) const {
-  if (vault_key.size() != 32) throw std::invalid_argument("Expected a 32-byte vault key");
-  if (!IsAvailable()) throw std::runtime_error("TPM 2.0 is unavailable");
+RecipientKey TpmKeyStore::CreateRecipientKey() const {
   CngObject provider;
   OpenProvider(provider);
+  const auto name = NewKeyName();
   CngObject key;
-  OpenOrCreateWrappingKey(provider.value, key);
-  const auto ciphertext = EncryptKey(key.value, vault_key);
-  std::vector<uint8_t> result(kHeader.begin(), kHeader.end());
-  result.insert(result.end(), ciphertext.begin(), ciphertext.end());
-  return result;
+  CreateRecipientKey(provider.value, name, key);
+  return {HandleFromName(name), ExportPublicKey(key.value)};
 }
 
-std::vector<uint8_t> TpmKeyStore::Unprotect(const std::vector<uint8_t>& protected_key) const {
-  if (protected_key.size() != kHeader.size() + kRsaBits / 8 ||
-      !std::equal(kHeader.begin(), kHeader.end(), protected_key.begin())) {
-    throw std::invalid_argument("Invalid Windows TPM protected key");
-  }
+std::vector<uint8_t> TpmKeyStore::OpenRecipientKey(
+    const std::vector<uint8_t>& handle) const {
   CngObject provider;
   OpenProvider(provider);
   CngObject key;
-  Check(NCryptOpenKey(provider.value, &key.value, kWrappingKeyName, 0,
-                      NCRYPT_SILENT_FLAG), "Open existing TPM wrapping key");
-  ValidateWrappingKey(key.value);
-  return DecryptKey(key.value, protected_key);
+  OpenRecipientKeyByName(provider.value, NameFromHandle(handle), key);
+  return ExportPublicKey(key.value);
+}
+
+std::vector<uint8_t> TpmKeyStore::SharedSecret(
+    const std::vector<uint8_t>& handle,
+    const std::vector<uint8_t>& peer_public_key) const {
+  CngObject provider;
+  OpenProvider(provider);
+  CngObject key;
+  OpenRecipientKeyByName(provider.value, NameFromHandle(handle), key);
+  CngObject peer;
+  ImportPeerPublicKey(provider.value, peer_public_key, peer);
+  return ComputeSharedSecret(key.value, peer.value);
 }
 
 }

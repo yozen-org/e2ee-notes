@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
 import 'package:secure_keys/src/envelope_secure_key.dart';
-import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
 
 import 'support/fake_android_keystore_keys.dart';
@@ -27,7 +26,10 @@ void main() {
             backend: FakeAndroidKeystoreKeys(),
             provider: 'android-keystore',
           ),
-          _ => TpmSecureKey(FakeTpmKeys()),
+          _ => EnvelopeSecureKey(
+            backend: FakeTpmKeys(),
+            provider: 'tpm',
+          ),
         };
         final keys = PlatformSecureKey.withHardware(adapter);
         final generated = await keys.generate(policy: hardware);
@@ -58,7 +60,9 @@ void main() {
   });
   test('existing protected keys never fall back after hardware loss', () async {
     final tpm = FakeTpmKeys();
-    final keys = PlatformSecureKey.withHardware(TpmSecureKey(tpm));
+    final keys = PlatformSecureKey.withHardware(
+      EnvelopeSecureKey(backend: tpm, provider: 'tpm'),
+    );
     final generated = await keys.generate(policy: hardware);
     tpm.available = false;
     tpm.availabilityChecks = 0;
@@ -66,21 +70,17 @@ void main() {
     expect(tpm.availabilityChecks, 0);
     expect(tpm.keys, hasLength(1));
   });
-  test(
-    'incorrect and short restored keys prevent returning persistence data',
-    () async {
-      for (final short in [false, true]) {
-        final tpm = FakeTpmKeys()
-          ..transformRestored = (key) =>
-              short ? Uint8List(31) : (key..[0] ^= 1);
-        final keys = PlatformSecureKey.withHardware(TpmSecureKey(tpm));
-        await expectLater(
-          keys.generate(policy: hardware),
-          throwsFormatException,
-        );
-      }
-    },
-  );
+  test('corrupt shared secret prevents returning persistence data', () async {
+    for (final short in [false, true]) {
+      final tpm = FakeTpmKeys()
+        ..transformSharedSecret = (shared) =>
+            short ? Uint8List(31) : (shared..[0] ^= 1);
+      final keys = PlatformSecureKey.withHardware(
+        EnvelopeSecureKey(backend: tpm, provider: 'tpm'),
+      );
+      await expectLater(keys.generate(policy: hardware), throwsA(anything));
+    }
+  });
   test('user presence policy reaches the native adapter', () async {
     final native = FakeSecureEnclaveKeys();
     final keys = PlatformSecureKey.withHardware(
@@ -90,8 +90,9 @@ void main() {
     expect(native.requestedUserPresence, isTrue);
     final tpm = FakeTpmKeys();
     await expectLater(
-      PlatformSecureKey.withHardware(TpmSecureKey(tpm))
-          .generate(policy: const KeyPolicy(requireUserPresence: true)),
+      PlatformSecureKey.withHardware(
+        EnvelopeSecureKey(backend: tpm, provider: 'tpm'),
+      ).generate(policy: const KeyPolicy(requireUserPresence: true)),
       throwsUnsupportedError,
     );
     expect(tpm.keys, isEmpty);
@@ -125,11 +126,13 @@ void main() {
       expect(await keys.open(accepted.record), source.vaultKey);
     },
   );
-  test('TPM advertises sharing as unsupported', () async {
-    final keys = PlatformSecureKey.withHardware(TpmSecureKey(FakeTpmKeys()));
-    expect((await keys.capabilities()).sharing, isFalse);
+  test('TPM advertises sharing as supported', () async {
+    final keys = PlatformSecureKey.withHardware(
+      EnvelopeSecureKey(backend: FakeTpmKeys(), provider: 'tpm'),
+    );
+    expect((await keys.capabilities()).sharing, isTrue);
     final generated = await keys.generate(policy: hardware);
-    await expectLater(keys.publicKey(generated.record), throwsUnsupportedError);
+    await expectLater(keys.publicKey(generated.record), completes);
   });
   test('Android Keystore advertises sharing as supported', () async {
     final keys = PlatformSecureKey.withHardware(
@@ -148,7 +151,9 @@ void main() {
       ),
       throwsFormatException,
     );
-    final keys = PlatformSecureKey.withHardware(TpmSecureKey(FakeTpmKeys()));
+    final keys = PlatformSecureKey.withHardware(
+      EnvelopeSecureKey(backend: FakeTpmKeys(), provider: 'tpm'),
+    );
     await expectLater(
       keys.open(KeyRecord('unknown', {})),
       throwsFormatException,

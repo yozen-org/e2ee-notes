@@ -8,16 +8,13 @@ import 'key_record.dart';
 const legacyKeyFiles = [
   'recipient-key.handle',
   'vault-key.envelope.json',
-  'vault-key.tpm',
   'vault-key.bin',
 ];
 
 KeyRecord? importLegacyKeyRecord(Map<String, Uint8List> files) {
   final handle = files['recipient-key.handle'];
   final envelope = files['vault-key.envelope.json'];
-  final tpm = files['vault-key.tpm'];
-  if ((handle != null) != (envelope != null) ||
-      (tpm != null && handle != null)) {
+  if ((handle != null) != (envelope != null)) {
     throw const FormatException('Incomplete or conflicting legacy key state');
   }
   if (handle != null) {
@@ -25,9 +22,6 @@ KeyRecord? importLegacyKeyRecord(Map<String, Uint8List> files) {
       'handle': base64Encode(handle),
       'envelope': jsonDecode(utf8.decode(envelope!)),
     });
-  }
-  if (tpm != null) {
-    return KeyRecord('tpm', {'protectedKey': base64Encode(tpm)});
   }
   final plain = files['vault-key.bin'];
   return plain == null

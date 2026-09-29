@@ -10,8 +10,7 @@ import 'software_secure_key.dart';
 import 'envelope_secure_key.dart';
 import 'keystore/android_keystore_keys.dart';
 import 'secure_enclave/secure_enclave_keys.dart';
-import 'tpm/method_channel_tpm_keys.dart';
-import 'tpm/tpm_secure_key.dart';
+import 'tpm/tpm_keys.dart';
 
 final class PlatformSecureKey extends SecureKey {
   PlatformSecureKey()
@@ -24,7 +23,10 @@ final class PlatformSecureKey extends SecureKey {
           backend: AndroidKeystoreKeys(),
           provider: 'android-keystore',
         ),
-        'windows' || 'linux' => TpmSecureKey(const MethodChannelTpmKeys()),
+        'windows' || 'linux' => EnvelopeSecureKey(
+          backend: TpmKeys(),
+          provider: 'tpm',
+        ),
         _ => SoftwareSecureKey(),
       });
 

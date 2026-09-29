@@ -5,45 +5,76 @@ import 'package:secure_keys/tpm.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('secure_keys');
-  const tpm = MethodChannelTpmKeys();
+  final tpm = TpmKeys();
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
-  test('TPM channel passes opaque bytes in both directions', () async {
-    final key = Uint8List(32);
-    final blob = Uint8List.fromList([69, 84, 87, 1, 99]);
+  test('TPM channel passes key handles and public keys', () async {
+    final handle = Uint8List.fromList([1, 2]);
+    final peer = Uint8List.fromList([65]);
     messenger.setMockMethodCallHandler(channel, (call) async {
       switch (call.method) {
-        case 'tpmIsAvailable':
-          return true;
-        case 'tpmProtect':
-          expect(call.arguments, key);
-          return blob;
-        case 'tpmUnprotect':
-          expect(call.arguments, blob);
-          return key;
+        case 'capabilities':
+          return {'available': true, 'hardwareBacked': true, 'provider': 'TPM'};
+        case 'createRecipientKey':
+          return {
+            'keyHandle': handle,
+            'publicKey': {
+              'version': 1,
+              'suite': 'P256-HKDF-SHA256-AES256GCM',
+              'keyID': 'id',
+              'publicKey': 'public',
+            },
+          };
+        case 'openRecipientKey':
+          expect((call.arguments as Map)['keyHandle'], handle);
+          return {
+            'version': 1,
+            'suite': 'P256-HKDF-SHA256-AES256GCM',
+            'keyID': 'id',
+            'publicKey': 'public',
+          };
+        case 'sharedSecret':
+          expect((call.arguments as Map)['keyHandle'], handle);
+          expect((call.arguments as Map)['peerPublicKey'], peer);
+          return Uint8List(32);
         default:
           fail('Unexpected method: ${call.method}');
       }
     });
-    expect(await tpm.isAvailable(), isTrue);
-    expect(await tpm.protect(key), blob);
-    expect(await tpm.unprotect(blob), key);
+
+    final capabilities = await tpm.capabilities();
+    expect(capabilities.hardwareBacked, isTrue);
+    expect(capabilities.sharing, isTrue);
+    expect(capabilities.userPresence, isFalse);
+
+    final recipient = await tpm.createRecipientKey(requireUserPresence: false);
+    expect(recipient.handle, handle);
+    final reopened = await tpm.openRecipientKey(recipient.handle);
+    expect(reopened.publicKey.toMap(), recipient.publicKey.toMap());
+    final shared = await tpm.sharedSecret(
+      keyHandle: recipient.handle,
+      peerPublicKey: peer,
+    );
+    expect(shared, hasLength(32));
   });
 
   test('TPM errors reach the caller', () async {
     messenger.setMockMethodCallHandler(channel, (_) async {
       throw PlatformException(code: 'tpm_error', message: 'Access denied');
     });
-    await expectLater(tpm.isAvailable(), throwsA(isA<PlatformException>()));
+    await expectLater(tpm.capabilities(), throwsA(isA<PlatformException>()));
     await expectLater(
-      tpm.protect(Uint8List(32)),
+      tpm.createRecipientKey(requireUserPresence: false),
       throwsA(isA<PlatformException>()),
     );
     await expectLater(
-      tpm.unprotect(Uint8List(4)),
+      tpm.sharedSecret(
+        keyHandle: Uint8List.fromList([1]),
+        peerPublicKey: Uint8List.fromList([65]),
+      ),
       throwsA(isA<PlatformException>()),
     );
   });
