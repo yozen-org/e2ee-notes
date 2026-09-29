@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
-import 'package:secure_keys/src/secure_enclave/secure_enclave_secure_key.dart';
+import 'package:secure_keys/src/envelope_secure_key.dart';
 import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
 import 'package:e2ee_notes/notes/logic/notes_service.dart';
@@ -101,7 +101,9 @@ void main() {
     'legacy Apple state imports without public file or key generation',
     () async {
       final native = FakeSecureEnclaveKeys();
-      keys = PlatformSecureKey.withHardware(SecureEnclaveSecureKey(native));
+      keys = PlatformSecureKey.withHardware(
+        EnvelopeSecureKey(backend: native, provider: 'secure-enclave'),
+      );
       final generated = await keys.generate(policy: const KeyPolicy());
       final data = generated.record.data;
       await file('recipient-key.handle')

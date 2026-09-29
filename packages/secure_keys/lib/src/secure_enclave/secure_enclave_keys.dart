@@ -1,6 +1,6 @@
-import '../recipient_public_key.dart';
+import '../hardware_key_backend.dart';
+import '../key_capabilities.dart';
 import '../recipient_key.dart';
-import '../vault_key_envelope.dart';
 export '../recipient_public_key.dart';
 export '../recipient_key.dart';
 export '../vault_key_envelope.dart';
@@ -28,31 +28,34 @@ final class HardwareKeyCapabilities {
   final String provider;
 }
 
-class SecureEnclaveKeys {
-  Future<HardwareKeyCapabilities> capabilities() =>
-      SecureEnclaveKeysPlatform.instance.capabilities();
+final class SecureEnclaveKeys implements HardwareKeyBackend {
+  @override
+  Future<KeyCapabilities> capabilities() async {
+    final caps = await SecureEnclaveKeysPlatform.instance.capabilities();
+    final available = caps.available && caps.hardwareBacked;
+    return KeyCapabilities(
+      hardwareBacked: available,
+      sharing: available,
+      userPresence: available,
+    );
+  }
 
+  @override
   Future<RecipientKey> createRecipientKey({bool requireUserPresence = false}) =>
       SecureEnclaveKeysPlatform.instance.createRecipientKey(
         requireUserPresence: requireUserPresence,
       );
 
+  @override
   Future<RecipientKey> openRecipientKey(Uint8List keyHandle) =>
       SecureEnclaveKeysPlatform.instance.openRecipientKey(keyHandle);
 
-  Future<VaultKeyEnvelope> wrapVaultKey({
-    required Uint8List vaultKey,
-    required RecipientPublicKey recipient,
-  }) => SecureEnclaveKeysPlatform.instance.wrapVaultKey(
-    vaultKey: vaultKey,
-    recipient: recipient,
-  );
-
-  Future<Uint8List> unwrapVaultKey({
+  @override
+  Future<Uint8List> sharedSecret({
     required Uint8List keyHandle,
-    required VaultKeyEnvelope envelope,
-  }) => SecureEnclaveKeysPlatform.instance.unwrapVaultKey(
+    required Uint8List peerPublicKey,
+  }) => SecureEnclaveKeysPlatform.instance.sharedSecret(
     keyHandle: keyHandle,
-    envelope: envelope,
+    peerPublicKey: peerPublicKey,
   );
 }

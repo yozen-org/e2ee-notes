@@ -39,22 +39,10 @@ final class FakeSecureEnclaveKeysPlatform
       );
 
   @override
-  Future<Uint8List> unwrapVaultKey({
+  Future<Uint8List> sharedSecret({
     required Uint8List keyHandle,
-    required VaultKeyEnvelope envelope,
+    required Uint8List peerPublicKey,
   }) async => Uint8List(32);
-
-  @override
-  Future<VaultKeyEnvelope> wrapVaultKey({
-    required Uint8List vaultKey,
-    required RecipientPublicKey recipient,
-  }) async => const VaultKeyEnvelope(
-    version: 1,
-    suite: 'suite',
-    recipientKeyId: 'id',
-    ephemeralPublicKey: 'ephemeral',
-    sealedKey: 'sealed',
-  );
 }
 
 void main() {
@@ -70,19 +58,16 @@ void main() {
     final hardwareKeys = SecureEnclaveKeys();
     final capabilities = await hardwareKeys.capabilities();
     final recipient = await hardwareKeys.createRecipientKey();
-    final envelope = await hardwareKeys.wrapVaultKey(
-      vaultKey: Uint8List(32),
-      recipient: recipient.publicKey,
-    );
-    final key = await hardwareKeys.unwrapVaultKey(
+    final shared = await hardwareKeys.sharedSecret(
       keyHandle: recipient.handle,
-      envelope: envelope,
+      peerPublicKey: Uint8List(65),
     );
 
     expect(capabilities.hardwareBacked, isTrue);
     expect(recipient.handle, [1]);
-    expect((await hardwareKeys.openRecipientKey(recipient.handle)).handle, [1]);
-    expect(envelope.recipientKeyId, 'id');
-    expect(key, hasLength(32));
+    final reopened = await hardwareKeys.openRecipientKey(recipient.handle);
+    expect(reopened.handle, recipient.handle);
+    expect(reopened.publicKey.toMap(), recipient.publicKey.toMap());
+    expect(shared, hasLength(32));
   });
 }

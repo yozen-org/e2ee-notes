@@ -35,15 +35,9 @@ void main() {
                 'keyID': 'id',
                 'publicKey': 'public',
               };
-            case 'wrapVaultKey':
-              return {
-                'version': 1,
-                'suite': 'suite',
-                'recipientKeyID': 'id',
-                'ephemeralPublicKey': 'ephemeral',
-                'sealedKey': 'sealed',
-              };
-            case 'unwrapVaultKey':
+            case 'sharedSecret':
+              expect((call.arguments as Map)['keyHandle'], [1, 2]);
+              expect((call.arguments as Map)['peerPublicKey'], [65]);
               return Uint8List(32);
           }
           return null;
@@ -60,13 +54,9 @@ void main() {
     final recipient = await platform.createRecipientKey(
       requireUserPresence: false,
     );
-    final envelope = await platform.wrapVaultKey(
-      vaultKey: Uint8List(32),
-      recipient: recipient.publicKey,
-    );
-    final unwrapped = await platform.unwrapVaultKey(
+    final shared = await platform.sharedSecret(
       keyHandle: recipient.handle,
-      envelope: envelope,
+      peerPublicKey: Uint8List.fromList([65]),
     );
 
     expect(capabilities.provider, 'test');
@@ -74,7 +64,6 @@ void main() {
     final reopened = await platform.openRecipientKey(recipient.handle);
     expect(reopened.publicKey.toMap(), recipient.publicKey.toMap());
     expect(reopened.handle, recipient.handle);
-    expect(envelope.sealedKey, 'sealed');
-    expect(unwrapped, hasLength(32));
+    expect(shared, hasLength(32));
   });
 }

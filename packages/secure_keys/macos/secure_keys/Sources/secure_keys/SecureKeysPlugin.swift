@@ -5,14 +5,11 @@ import LocalAuthentication
 import Security
 
 private let suite = "P256-HKDF-SHA256-AES256GCM"
-private let domain = Data("yozen.e2ee-notes.key-wrap.v1".utf8)
 
 private enum HardwareKeyError: Error {
   case unavailable
   case invalidArguments
-  case invalidKeyLength
   case invalidRecipient
-  case recipientMismatch
   case accessControl
 }
 
@@ -45,20 +42,13 @@ public class SecureKeysPlugin: NSObject, FlutterPlugin {
         else { throw HardwareKeyError.invalidArguments }
         let key = try openKey(handle: handle)
         result(publicDocument(key.publicKey))
-      case "wrapVaultKey":
-        let arguments = try dictionary(call.arguments)
-        guard
-          let secret = (arguments["vaultKey"] as? FlutterStandardTypedData)?.data,
-          let recipient = arguments["recipient"] as? [String: Any]
-        else { throw HardwareKeyError.invalidArguments }
-        result(try wrap(secret: secret, recipient: recipient))
-      case "unwrapVaultKey":
+      case "sharedSecret":
         let arguments = try dictionary(call.arguments)
         guard
           let handle = (arguments["keyHandle"] as? FlutterStandardTypedData)?.data,
-          let envelope = arguments["envelope"] as? [String: Any]
+          let peer = (arguments["peerPublicKey"] as? FlutterStandardTypedData)?.data
         else { throw HardwareKeyError.invalidArguments }
-        result(FlutterStandardTypedData(bytes: try unwrap(handle: handle, envelope: envelope)))
+        result(FlutterStandardTypedData(bytes: try sharedSecret(handle: handle, peerPublicKey: peer)))
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -108,72 +98,13 @@ private func publicDocument(_ key: P256.KeyAgreement.PublicKey) -> [String: Any]
   ]
 }
 
-private func wrap(secret: Data, recipient: [String: Any]) throws -> [String: Any] {
-  guard secret.count == 32 else { throw HardwareKeyError.invalidKeyLength }
-  guard
-    recipient["version"] as? Int == 1,
-    recipient["suite"] as? String == suite,
-    let claimedID = recipient["keyID"] as? String,
-    let encoded = recipient["publicKey"] as? String,
-    let publicBytes = Data(base64Encoded: encoded)
-  else { throw HardwareKeyError.invalidRecipient }
-  let recipientKey = try P256.KeyAgreement.PublicKey(x963Representation: publicBytes)
-  guard keyID(publicBytes) == claimedID else { throw HardwareKeyError.recipientMismatch }
-
-  let ephemeral = P256.KeyAgreement.PrivateKey()
-  let shared = try ephemeral.sharedSecretFromKeyAgreement(with: recipientKey)
-  let wrappingKey = deriveKey(shared, recipientKeyID: claimedID)
-  let sealed = try AES.GCM.seal(
-    secret,
-    using: wrappingKey,
-    authenticating: associatedData(claimedID)
-  )
-  return [
-    "version": 1,
-    "suite": suite,
-    "recipientKeyID": claimedID,
-    "ephemeralPublicKey": ephemeral.publicKey.x963Representation.base64EncodedString(),
-    "sealedKey": sealed.combined!.base64EncodedString(),
-  ]
-}
-
-private func unwrap(handle: Data, envelope: [String: Any]) throws -> Data {
+private func sharedSecret(handle: Data, peerPublicKey: Data) throws -> Data {
   guard SecureEnclave.isAvailable else { throw HardwareKeyError.unavailable }
   let key = try openKey(handle: handle)
-  guard
-    envelope["version"] as? Int == 1,
-    envelope["suite"] as? String == suite,
-    let recipientID = envelope["recipientKeyID"] as? String,
-    recipientID == keyID(key.publicKey.x963Representation),
-    let encodedEphemeral = envelope["ephemeralPublicKey"] as? String,
-    let ephemeralBytes = Data(base64Encoded: encodedEphemeral),
-    let encodedSealed = envelope["sealedKey"] as? String,
-    let sealedBytes = Data(base64Encoded: encodedSealed)
+  guard let peer = try? P256.KeyAgreement.PublicKey(x963Representation: peerPublicKey)
   else { throw HardwareKeyError.invalidRecipient }
-
-  let ephemeral = try P256.KeyAgreement.PublicKey(x963Representation: ephemeralBytes)
-  let shared = try key.sharedSecretFromKeyAgreement(with: ephemeral)
-  let sealed = try AES.GCM.SealedBox(combined: sealedBytes)
-  let secret = try AES.GCM.open(
-    sealed,
-    using: deriveKey(shared, recipientKeyID: recipientID),
-    authenticating: associatedData(recipientID)
-  )
-  guard secret.count == 32 else { throw HardwareKeyError.invalidKeyLength }
-  return secret
-}
-
-private func deriveKey(_ shared: SharedSecret, recipientKeyID: String) -> SymmetricKey {
-  shared.hkdfDerivedSymmetricKey(
-    using: SHA256.self,
-    salt: Data(recipientKeyID.utf8),
-    sharedInfo: domain,
-    outputByteCount: 32
-  )
-}
-
-private func associatedData(_ recipientKeyID: String) -> Data {
-  Data("\(suite):\(recipientKeyID)".utf8)
+  let shared = try key.sharedSecretFromKeyAgreement(with: peer)
+  return shared.withUnsafeBytes { Data($0) }
 }
 
 private func keyID(_ publicKey: Data) -> String {

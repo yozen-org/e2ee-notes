@@ -104,9 +104,20 @@ final class KeyEnvelopeCipher {
       }
       return ECPrivateKey(_bytesToBigInt(scalar), _curve);
     }
-    final keyPair = ECKeyGenerator()
-      ..init(ECKeyGeneratorParameters(_curve));
-    return keyPair.generateKeyPair().privateKey;
+    return ECPrivateKey(_randomScalar(), _curve);
+  }
+
+  BigInt _randomScalar() {
+    final order = _curve.n;
+    BigInt candidate;
+    do {
+      candidate = _bytesToBigInt(
+        Uint8List.fromList(
+          List.generate(_keyLength, (_) => _random.nextInt(256)),
+        ),
+      );
+    } while (candidate == BigInt.zero || candidate >= order);
+    return candidate;
   }
 
   Uint8List _sharedSecret(ECPrivateKey private, ECPublicKey public) {

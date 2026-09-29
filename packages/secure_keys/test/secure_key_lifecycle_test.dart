@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
 import 'package:secure_keys/src/keystore/android_keystore_secure_key.dart';
-import 'package:secure_keys/src/secure_enclave/secure_enclave_secure_key.dart';
+import 'package:secure_keys/src/envelope_secure_key.dart';
 import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
 
@@ -20,7 +20,10 @@ void main() {
       '$provider returns a 32-byte key and opens a serialized record',
       () async {
         final adapter = switch (provider) {
-          'apple' => SecureEnclaveSecureKey(FakeSecureEnclaveKeys()),
+          'apple' => EnvelopeSecureKey(
+            backend: FakeSecureEnclaveKeys(),
+            provider: 'secure-enclave',
+          ),
           'android' => AndroidKeystoreSecureKey(FakeAndroidKeystoreKeys()),
           _ => TpmSecureKey(FakeTpmKeys()),
         };
@@ -78,7 +81,9 @@ void main() {
   );
   test('user presence policy reaches the native adapter', () async {
     final native = FakeSecureEnclaveKeys();
-    final keys = PlatformSecureKey.withHardware(SecureEnclaveSecureKey(native));
+    final keys = PlatformSecureKey.withHardware(
+      EnvelopeSecureKey(backend: native, provider: 'secure-enclave'),
+    );
     await keys.generate(policy: const KeyPolicy(requireUserPresence: true));
     expect(native.requestedUserPresence, isTrue);
     final tpm = FakeTpmKeys();
@@ -100,7 +105,7 @@ void main() {
     'sharing uses the recipient public key and restores the same vault key',
     () async {
       final keys = PlatformSecureKey.withHardware(
-        SecureEnclaveSecureKey(FakeSecureEnclaveKeys()),
+        EnvelopeSecureKey(backend: FakeSecureEnclaveKeys(), provider: 'secure-enclave'),
       );
       final source = await keys.generate(policy: hardware);
       final recipient = await keys.generate(policy: hardware);

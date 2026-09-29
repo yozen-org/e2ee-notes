@@ -45,22 +45,11 @@ class MethodChannelSecureEnclaveKeys extends SecureEnclaveKeysPlatform {
   }
 
   @override
-  Future<VaultKeyEnvelope> wrapVaultKey({
-    required Uint8List vaultKey,
-    required RecipientPublicKey recipient,
-  }) async => VaultKeyEnvelope.fromMap(
-    (await methodChannel.invokeMapMethod<Object?, Object?>('wrapVaultKey', {
-      'vaultKey': vaultKey,
-      'recipient': recipient.toMap(),
-    }))!,
-  );
-
-  @override
-  Future<Uint8List> unwrapVaultKey({
+  Future<Uint8List> sharedSecret({
     required Uint8List keyHandle,
-    required VaultKeyEnvelope envelope,
-  }) async => (await methodChannel.invokeMethod<Uint8List>('unwrapVaultKey', {
+    required Uint8List peerPublicKey,
+  }) async => (await methodChannel.invokeMethod<Uint8List>('sharedSecret', {
     'keyHandle': keyHandle,
-    'envelope': envelope.toMap(),
+    'peerPublicKey': peerPublicKey,
   }))!;
 }

@@ -7,17 +7,20 @@ import 'key_policy.dart';
 import 'key_record.dart';
 import 'secure_key.dart';
 import 'software_secure_key.dart';
+import 'envelope_secure_key.dart';
 import 'keystore/android_keystore_secure_key.dart';
 import 'keystore/method_channel_android_keystore_keys.dart';
 import 'secure_enclave/secure_enclave_keys.dart';
-import 'secure_enclave/secure_enclave_secure_key.dart';
 import 'tpm/method_channel_tpm_keys.dart';
 import 'tpm/tpm_secure_key.dart';
 
 final class PlatformSecureKey extends SecureKey {
   PlatformSecureKey()
     : this.withHardware(switch (Platform.operatingSystem) {
-        'macos' || 'ios' => SecureEnclaveSecureKey(SecureEnclaveKeys()),
+        'macos' || 'ios' => EnvelopeSecureKey(
+          backend: SecureEnclaveKeys(),
+          provider: 'secure-enclave',
+        ),
         'android' => AndroidKeystoreSecureKey(
           const MethodChannelAndroidKeystoreKeys(),
         ),

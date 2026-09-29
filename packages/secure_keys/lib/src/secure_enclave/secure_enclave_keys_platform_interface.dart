@@ -25,13 +25,8 @@ abstract class SecureEnclaveKeysPlatform extends PlatformInterface {
 
   Future<RecipientKey> openRecipientKey(Uint8List keyHandle);
 
-  Future<VaultKeyEnvelope> wrapVaultKey({
-    required Uint8List vaultKey,
-    required RecipientPublicKey recipient,
-  });
-
-  Future<Uint8List> unwrapVaultKey({
+  Future<Uint8List> sharedSecret({
     required Uint8List keyHandle,
-    required VaultKeyEnvelope envelope,
+    required Uint8List peerPublicKey,
   });
 }
