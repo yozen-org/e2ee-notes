@@ -1,0 +1,21 @@
+{
+  "description": "P-256 ECDH + HKDF-SHA256 + AES-256-GCM vault-key envelope conformance vector",
+  "suite": "P256-HKDF-SHA256-AES256GCM",
+  "recipientPrivateHex": "1b99db009adca4bfc48580074d30304955e8a2492a34c8e0568f382bba358cea",
+  "recipientPublicBase64": "BIfIHcCB7b7C5x3L/pON4S38KJMJJgNjN8hSV/BFO0uHdWnKTq+zMm2j3s6GoM+x4fTYqltEk+BiC5ZDghZdaN4=",
+  "recipientKeyID": "9e396cb4f62b15eb7e31cb20fcd9927239cda600ae6e92175c871e6a495a5e16",
+  "ephemeralPrivateHex": "6e0de9b28a644de27d7b704a66b3b037f0c2be075dd6d3318f7488de0982cfcd",
+  "ephemeralPublicBase64": "BATHTCD3VkZwlvRJ7sy1VNYNA5chnUzmMKUwupeVV0UgKsl8/xujScp5UX5WZCxsokG+7t5NUgjMxOwhqBiAcZw=",
+  "sharedSecretHex": "68f57d2b33bd21fff1465bcad4ca6ddd6d1e1494734e33bdd6a927ebc94461ab",
+  "wrappingKeyHex": "46dfc72671157addf2e1f538fe4a98eb5375e6e2e336e08ffad91857b30a9f87",
+  "nonceHex": "000102030405060708090a0b",
+  "vaultKeyHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "sealedKeyBase64": "AAECAwQFBgcICQoLhgHaQl/f3n5Gve4W15YOFyrhsFId7yDYDRIL+r+26ZTkj0U4S1glOtqgfFlFPY+2",
+  "envelope": {
+    "version": 1,
+    "suite": "P256-HKDF-SHA256-AES256GCM",
+    "recipientKeyID": "9e396cb4f62b15eb7e31cb20fcd9927239cda600ae6e92175c871e6a495a5e16",
+    "ephemeralPublicKey": "BATHTCD3VkZwlvRJ7sy1VNYNA5chnUzmMKUwupeVV0UgKsl8/xujScp5UX5WZCxsokG+7t5NUgjMxOwhqBiAcZw=",
+    "sealedKey": "AAECAwQFBgcICQoLhgHaQl/f3n5Gve4W15YOFyrhsFId7yDYDRIL+r+26ZTkj0U4S1glOtqgfFlFPY+2"
+  }
+}
