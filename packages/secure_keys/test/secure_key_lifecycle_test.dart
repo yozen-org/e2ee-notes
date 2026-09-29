@@ -112,16 +112,9 @@ void main() {
         EnvelopeSecureKey(backend: FakeSecureEnclaveKeys(), provider: 'secure-enclave'),
       );
       final source = await keys.generate(policy: hardware);
-      final recipient = await keys.generate(policy: hardware);
-      final envelope = await keys.envelope(
-        source.vaultKey,
-        await keys.publicKey(recipient.record),
-      );
-      final accepted = await keys.accept(
-        envelope,
-        recipient.record,
-        policy: hardware,
-      );
+      final recipient = await keys.createRecipientKey(policy: hardware);
+      final envelope = await keys.envelope(source.vaultKey, recipient.publicKey);
+      final accepted = await keys.accept(envelope, recipient, policy: hardware);
       expect(accepted.vaultKey, source.vaultKey);
       expect(await keys.open(accepted.record), source.vaultKey);
     },

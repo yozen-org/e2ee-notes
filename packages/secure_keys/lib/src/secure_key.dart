@@ -5,6 +5,7 @@ import 'generated_key.dart';
 import 'key_capabilities.dart';
 import 'key_policy.dart';
 import 'key_record.dart';
+import 'recipient_key.dart';
 import 'recipient_public_key.dart';
 import 'vault_key_envelope.dart';
 
@@ -26,6 +27,9 @@ abstract class SecureKey {
   /// True for a record explicitly stored without hardware protection.
   bool isSoftware(KeyRecord record) => record.provider == 'software';
 
+  /// Creates a recipient key that can later receive a vault key via [accept].
+  Future<RecipientKey> createRecipientKey({required KeyPolicy policy}) =>
+      Future.error(UnsupportedError('Sharing is unavailable'));
   Future<RecipientPublicKey> publicKey(KeyRecord record) =>
       Future.error(UnsupportedError('Sharing is unavailable'));
   Future<VaultKeyEnvelope> envelope(
@@ -34,7 +38,7 @@ abstract class SecureKey {
   ) => Future.error(UnsupportedError('Sharing is unavailable'));
   Future<GeneratedKey> accept(
     VaultKeyEnvelope envelope,
-    KeyRecord recipient, {
+    RecipientKey recipient, {
     required KeyPolicy policy,
   }) => Future.error(UnsupportedError('Sharing is unavailable'));
 }

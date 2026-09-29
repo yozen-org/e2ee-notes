@@ -7,6 +7,7 @@ import 'key_capabilities.dart';
 import 'key_envelope_cipher.dart';
 import 'key_policy.dart';
 import 'key_record.dart';
+import 'recipient_key.dart';
 import 'recipient_public_key.dart';
 import 'secure_key.dart';
 import 'vault_key_envelope.dart';
@@ -38,10 +39,7 @@ final class EnvelopeSecureKey extends SecureKey {
     required KeyPolicy policy,
   }) async {
     validateVaultKey(vaultKey);
-    if (policy.requireUserPresence &&
-        !(await backend.capabilities()).userPresence) {
-      throw UnsupportedError('User presence is unsupported');
-    }
+    await _requireSupported(policy);
     final recipient = await backend.createRecipientKey(
       requireUserPresence: policy.requireUserPresence,
     );
@@ -69,6 +67,14 @@ final class EnvelopeSecureKey extends SecureKey {
   }
 
   @override
+  Future<RecipientKey> createRecipientKey({required KeyPolicy policy}) async {
+    await _requireSupported(policy);
+    return backend.createRecipientKey(
+      requireUserPresence: policy.requireUserPresence,
+    );
+  }
+
+  @override
   Future<RecipientPublicKey> publicKey(KeyRecord record) async =>
       (await backend.openRecipientKey(_handle(record))).publicKey;
 
@@ -84,10 +90,10 @@ final class EnvelopeSecureKey extends SecureKey {
   @override
   Future<GeneratedKey> accept(
     VaultKeyEnvelope envelope,
-    KeyRecord recipient, {
+    RecipientKey recipient, {
     required KeyPolicy policy,
   }) async {
-    final handle = _handle(recipient);
+    final handle = recipient.handle;
     final own = await backend.openRecipientKey(handle);
     _requireOwn(own.publicKey, envelope);
     final shared = await backend.sharedSecret(
@@ -121,6 +127,13 @@ final class EnvelopeSecureKey extends SecureKey {
   void _requireOwn(RecipientPublicKey own, VaultKeyEnvelope envelope) {
     if (own.keyId != envelope.recipientKeyId) {
       throw const FormatException('envelope was not wrapped for this key');
+    }
+  }
+
+  Future<void> _requireSupported(KeyPolicy policy) async {
+    if (policy.requireUserPresence &&
+        !(await backend.capabilities()).userPresence) {
+      throw UnsupportedError('User presence is unsupported');
     }
   }
 }

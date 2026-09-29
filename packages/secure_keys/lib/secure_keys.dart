@@ -11,6 +11,7 @@ export 'src/key_record.dart';
 export 'src/key_policy.dart';
 export 'src/key_capabilities.dart';
 export 'src/generated_key.dart';
+export 'src/recipient_key.dart';
 export 'src/recipient_public_key.dart';
 export 'src/vault_key_envelope.dart';
 export 'src/legacy_key_record.dart';

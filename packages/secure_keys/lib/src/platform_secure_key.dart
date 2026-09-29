@@ -52,6 +52,9 @@ final class PlatformSecureKey extends SecureKey {
       (isSoftware(record) ? _software : _hardware).open(record);
 
   @override
+  Future<RecipientKey> createRecipientKey({required KeyPolicy policy}) =>
+      _hardware.createRecipientKey(policy: policy);
+  @override
   Future<RecipientPublicKey> publicKey(KeyRecord record) =>
       _hardware.publicKey(record);
   @override
@@ -62,7 +65,7 @@ final class PlatformSecureKey extends SecureKey {
   @override
   Future<GeneratedKey> accept(
     VaultKeyEnvelope envelope,
-    KeyRecord recipient, {
+    RecipientKey recipient, {
     required KeyPolicy policy,
   }) => _hardware.accept(envelope, recipient, policy: policy);
 }
