@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
-import 'package:secure_keys/src/keystore/android_keystore_secure_key.dart';
 import 'package:secure_keys/src/envelope_secure_key.dart';
 import 'package:secure_keys/src/tpm/tpm_secure_key.dart';
 import 'package:secure_keys/src/software_secure_key.dart';
@@ -24,7 +23,10 @@ void main() {
             backend: FakeSecureEnclaveKeys(),
             provider: 'secure-enclave',
           ),
-          'android' => AndroidKeystoreSecureKey(FakeAndroidKeystoreKeys()),
+          'android' => EnvelopeSecureKey(
+            backend: FakeAndroidKeystoreKeys(),
+            provider: 'android-keystore',
+          ),
           _ => TpmSecureKey(FakeTpmKeys()),
         };
         final keys = PlatformSecureKey.withHardware(adapter);
@@ -95,8 +97,9 @@ void main() {
     expect(tpm.keys, isEmpty);
     final android = FakeAndroidKeystoreKeys();
     await expectLater(
-      PlatformSecureKey.withHardware(AndroidKeystoreSecureKey(android))
-          .generate(policy: const KeyPolicy(requireUserPresence: true)),
+      PlatformSecureKey.withHardware(
+        EnvelopeSecureKey(backend: android, provider: 'android-keystore'),
+      ).generate(policy: const KeyPolicy(requireUserPresence: true)),
       throwsUnsupportedError,
     );
     expect(android.keys, isEmpty);
@@ -128,13 +131,13 @@ void main() {
     final generated = await keys.generate(policy: hardware);
     await expectLater(keys.publicKey(generated.record), throwsUnsupportedError);
   });
-  test('Android Keystore advertises sharing as unsupported', () async {
+  test('Android Keystore advertises sharing as supported', () async {
     final keys = PlatformSecureKey.withHardware(
-      AndroidKeystoreSecureKey(FakeAndroidKeystoreKeys()),
+      EnvelopeSecureKey(backend: FakeAndroidKeystoreKeys(), provider: 'android-keystore'),
     );
-    expect((await keys.capabilities()).sharing, isFalse);
+    expect((await keys.capabilities()).sharing, isTrue);
     final generated = await keys.generate(policy: hardware);
-    await expectLater(keys.publicKey(generated.record), throwsUnsupportedError);
+    await expectLater(keys.publicKey(generated.record), completes);
   });
   test('unknown record versions and providers fail closed', () async {
     expect(

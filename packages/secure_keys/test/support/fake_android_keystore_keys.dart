@@ -1,33 +1,118 @@
+import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:secure_keys/android.dart';
+import 'package:pointycastle/export.dart';
+import 'package:secure_keys/src/hardware_key_backend.dart';
+import 'package:secure_keys/src/key_capabilities.dart';
+import 'package:secure_keys/src/recipient_key.dart';
+import 'package:secure_keys/src/recipient_public_key.dart';
 
-final class FakeAndroidKeystoreKeys implements AndroidKeystoreKeys {
-  bool available = true;
+/// An in-memory P-256 backend that performs real ECDH, standing in for the
+/// Android Keystore in tests.
+final class FakeAndroidKeystoreKeys implements HardwareKeyBackend {
+  FakeAndroidKeystoreKeys({this.available = true});
+
+  bool available;
   int availabilityChecks = 0;
-  final keys = <String, Uint8List>{};
+  final keys = <int, ECPrivateKey>{};
   int _nextId = 1;
-  Uint8List Function(Uint8List)? transformRestored;
+
+  final ECDomainParameters _curve = ECDomainParameters('secp256r1');
+  final Random _random = Random.secure();
 
   @override
-  Future<bool> isAvailable() async {
+  Future<KeyCapabilities> capabilities() async {
     availabilityChecks++;
-    return available;
+    return KeyCapabilities(
+      hardwareBacked: available,
+      sharing: available,
+      userPresence: false,
+    );
   }
 
   @override
-  Future<ProtectedVaultKey> protect(Uint8List vaultKey) async {
-    final alias = 'key-${_nextId++}';
-    keys[alias] = Uint8List.fromList(vaultKey);
-    return ProtectedVaultKey(alias: alias, iv: Uint8List(12), ciphertext: Uint8List(1));
+  Future<RecipientKey> createRecipientKey({
+    required bool requireUserPresence,
+  }) async {
+    if (requireUserPresence) {
+      throw UnsupportedError('Android Keystore user presence is unsupported');
+    }
+    final id = _nextId++;
+    final private = ECPrivateKey(_randomScalar(), _curve);
+    keys[id] = private;
+    return RecipientKey(
+      handle: Uint8List.fromList([id]),
+      publicKey: _publicKey(private),
+    );
   }
 
   @override
-  Future<Uint8List> unprotect(ProtectedVaultKey protected) async {
-    if (!available) throw StateError('Android Keystore unavailable');
-    final key = keys[protected.alias];
-    if (key == null) throw const FormatException('invalid protected key');
-    final restored = Uint8List.fromList(key);
-    return transformRestored?.call(restored) ?? restored;
+  Future<RecipientKey> openRecipientKey(Uint8List keyHandle) async {
+    final private = keys[keyHandle.first];
+    if (private == null) throw StateError('unknown key handle');
+    return RecipientKey(handle: keyHandle, publicKey: _publicKey(private));
+  }
+
+  @override
+  Future<Uint8List> sharedSecret({
+    required Uint8List keyHandle,
+    required Uint8List peerPublicKey,
+  }) async {
+    final private = keys[keyHandle.first];
+    if (private == null) throw StateError('unknown key handle');
+    final agreement = ECDHBasicAgreement()..init(private);
+    final peerPoint = _curve.curve.decodePoint(peerPublicKey);
+    if (peerPoint == null || peerPoint.isInfinity) {
+      throw const FormatException('invalid peer public key');
+    }
+    return _bigIntToFixed(
+      agreement.calculateAgreement(ECPublicKey(peerPoint, _curve)),
+      32,
+    );
+  }
+
+  RecipientPublicKey _publicKey(ECPrivateKey private) {
+    final encoded = (_curve.G * private.d!)!.getEncoded(false);
+    return RecipientPublicKey(
+      version: 1,
+      suite: 'P256-HKDF-SHA256-AES256GCM',
+      keyId: _keyId(encoded),
+      publicKey: base64Encode(encoded),
+    );
+  }
+
+  String _keyId(Uint8List publicKey) => SHA256Digest()
+      .process(publicKey)
+      .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+      .join();
+
+  BigInt _randomScalar() {
+    final order = _curve.n;
+    BigInt candidate;
+    do {
+      candidate = _bytesToBigInt(
+        Uint8List.fromList(List.generate(32, (_) => _random.nextInt(256))),
+      );
+    } while (candidate == BigInt.zero || candidate >= order);
+    return candidate;
+  }
+
+  static BigInt _bytesToBigInt(Uint8List bytes) {
+    var value = BigInt.zero;
+    for (final byte in bytes) {
+      value = (value << 8) | BigInt.from(byte);
+    }
+    return value;
+  }
+
+  static Uint8List _bigIntToFixed(BigInt value, int length) {
+    final result = Uint8List(length);
+    var remaining = value;
+    for (var index = length - 1; index >= 0; index--) {
+      result[index] = (remaining & BigInt.from(0xff)).toInt();
+      remaining >>= 8;
+    }
+    return result;
   }
 }

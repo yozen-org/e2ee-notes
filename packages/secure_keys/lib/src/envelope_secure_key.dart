@@ -38,6 +38,10 @@ final class EnvelopeSecureKey extends SecureKey {
     required KeyPolicy policy,
   }) async {
     validateVaultKey(vaultKey);
+    if (policy.requireUserPresence &&
+        !(await backend.capabilities()).userPresence) {
+      throw UnsupportedError('User presence is unsupported');
+    }
     final recipient = await backend.createRecipientKey(
       requireUserPresence: policy.requireUserPresence,
     );

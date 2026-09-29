@@ -5,63 +5,84 @@ import 'package:secure_keys/android.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('secure_keys');
-  const keystore = MethodChannelAndroidKeystoreKeys();
+  final keystore = AndroidKeystoreKeys();
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
-  test('Android Keystore channel passes key bytes and record in both directions',
-      () async {
-    final key = Uint8List(32);
-    final iv = Uint8List(12);
-    final ciphertext = Uint8List.fromList([1, 2, 3, 4]);
+  test('Android Keystore channel passes key handles and public keys', () async {
+    final handle = Uint8List.fromList([1, 2]);
+    final peer = Uint8List.fromList([65]);
     messenger.setMockMethodCallHandler(channel, (call) async {
       switch (call.method) {
-        case 'keystoreIsAvailable':
-          return true;
-        case 'keystoreProtect':
-          expect(call.arguments, key);
-          return <String, Object?>{
-            'alias': 'alias-1',
-            'iv': iv,
-            'ciphertext': ciphertext,
+        case 'capabilities':
+          return {
+            'available': true,
+            'hardwareBacked': true,
+            'provider': 'Android Keystore',
           };
-        case 'keystoreUnprotect':
-          expect(call.arguments, {
-            'alias': 'alias-1',
-            'iv': iv,
-            'ciphertext': ciphertext,
-          });
-          return key;
+        case 'createRecipientKey':
+          return {
+            'keyHandle': handle,
+            'publicKey': {
+              'version': 1,
+              'suite': 'P256-HKDF-SHA256-AES256GCM',
+              'keyID': 'id',
+              'publicKey': 'public',
+            },
+          };
+        case 'openRecipientKey':
+          expect((call.arguments as Map)['keyHandle'], handle);
+          return {
+            'version': 1,
+            'suite': 'P256-HKDF-SHA256-AES256GCM',
+            'keyID': 'id',
+            'publicKey': 'public',
+          };
+        case 'sharedSecret':
+          expect((call.arguments as Map)['keyHandle'], handle);
+          expect((call.arguments as Map)['peerPublicKey'], peer);
+          return Uint8List(32);
         default:
           fail('Unexpected method: ${call.method}');
       }
     });
-    expect(await keystore.isAvailable(), isTrue);
-    final protected = await keystore.protect(key);
-    expect(protected.alias, 'alias-1');
-    expect(protected.iv, iv);
-    expect(protected.ciphertext, ciphertext);
-    expect(await keystore.unprotect(protected), key);
+
+    final capabilities = await keystore.capabilities();
+    expect(capabilities.hardwareBacked, isTrue);
+    expect(capabilities.sharing, isTrue);
+    expect(capabilities.userPresence, isFalse);
+
+    final recipient = await keystore.createRecipientKey(
+      requireUserPresence: false,
+    );
+    expect(recipient.handle, handle);
+    final reopened = await keystore.openRecipientKey(recipient.handle);
+    expect(reopened.publicKey.toMap(), recipient.publicKey.toMap());
+    final shared = await keystore.sharedSecret(
+      keyHandle: recipient.handle,
+      peerPublicKey: peer,
+    );
+    expect(shared, hasLength(32));
   });
 
   test('Android Keystore errors reach the caller', () async {
     messenger.setMockMethodCallHandler(channel, (_) async {
       throw PlatformException(code: 'keystore_error', message: 'Access denied');
     });
-    await expectLater(keystore.isAvailable(), throwsA(isA<PlatformException>()));
     await expectLater(
-      keystore.protect(Uint8List(32)),
+      keystore.capabilities(),
       throwsA(isA<PlatformException>()),
     );
     await expectLater(
-      keystore.unprotect(
-        ProtectedVaultKey(
-          alias: 'a',
-          iv: Uint8List(12),
-          ciphertext: Uint8List(1),
-        ),
+      keystore.createRecipientKey(requireUserPresence: false),
+      throwsA(isA<PlatformException>()),
+    );
+    await expectLater(
+      keystore.sharedSecret(
+        keyHandle: Uint8List.fromList([1]),
+        peerPublicKey: Uint8List.fromList([65]),
       ),
       throwsA(isA<PlatformException>()),
     );

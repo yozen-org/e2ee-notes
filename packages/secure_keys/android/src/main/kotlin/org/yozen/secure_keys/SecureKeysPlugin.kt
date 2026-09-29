@@ -4,21 +4,34 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
+import android.util.Base64
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.math.BigInteger
+import java.security.AlgorithmParameters
+import java.security.KeyFactory
+import java.security.KeyPair
+import java.security.KeyPairGenerator
 import java.security.KeyStore
+import java.security.MessageDigest
+import java.security.PrivateKey
+import java.security.interfaces.ECPublicKey
+import java.security.spec.ECGenParameterSpec
+import java.security.spec.ECParameterSpec
+import java.security.spec.ECPoint
+import java.security.spec.ECPublicKeySpec
 import java.util.UUID
-import javax.crypto.Cipher
+import javax.crypto.KeyAgreement
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.GCMParameterSpec
 
 private const val TAG = "secure_keys"
+private const val suite = "P256-HKDF-SHA256-AES256GCM"
 
 class SecureKeysPlugin :
     FlutterPlugin,
@@ -41,21 +54,28 @@ class SecureKeysPlugin :
     ) {
         when (call.method) {
             "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
-            "keystoreIsAvailable" -> result.success(isHardwareBacked())
-            "keystoreProtect" -> {
+            "capabilities" -> result.success(
+                mapOf(
+                    "available" to true,
+                    "hardwareBacked" to isHardwareBacked(),
+                    "provider" to "Android Keystore",
+                )
+            )
+            "createRecipientKey" -> result.success(createRecipientKey())
+            "openRecipientKey" -> {
                 try {
-                    result.success(protect(call.arguments as ByteArray))
+                    result.success(openRecipientKey(call.arguments as ByteArray))
                 } catch (error: Exception) {
-                    Log.e(TAG, "keystoreProtect failed", error)
+                    Log.e(TAG, "openRecipientKey failed", error)
                     result.error("keystore_error", error.message, null)
                 }
             }
-            "keystoreUnprotect" -> {
+            "sharedSecret" -> {
                 try {
                     @Suppress("UNCHECKED_CAST")
-                    result.success(unprotect(call.arguments as Map<String, Any>))
+                    result.success(sharedSecret(call.arguments as Map<String, Any>))
                 } catch (error: Exception) {
-                    Log.e(TAG, "keystoreUnprotect failed", error)
+                    Log.e(TAG, "sharedSecret failed", error)
                     result.error("keystore_error", error.message, null)
                 }
             }
@@ -67,29 +87,87 @@ class SecureKeysPlugin :
         channel.setMethodCallHandler(null)
     }
 
-    private fun protect(vaultKey: ByteArray): Map<String, Any> {
-        val alias = "vault-${UUID.randomUUID()}"
-        val key = generateAesKey(alias)
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.ENCRYPT_MODE, key)
-        val ciphertext = cipher.doFinal(vaultKey)
+    private fun createRecipientKey(): Map<String, Any> {
+        val alias = "recipient-${UUID.randomUUID()}"
+        val keyPair = generateP256KeyPair(alias)
         return mapOf(
-            "alias" to alias,
-            "iv" to cipher.iv,
-            "ciphertext" to ciphertext,
+            "keyHandle" to alias.toByteArray(Charsets.UTF_8),
+            "publicKey" to publicDocument(x963Encode(keyPair.public as ECPublicKey)),
         )
     }
 
-    private fun unprotect(record: Map<String, Any>): ByteArray {
-        val alias = record["alias"] as String
-        val iv = record["iv"] as ByteArray
-        val ciphertext = record["ciphertext"] as ByteArray
-        val key = keyStore.getKey(alias, null) as? SecretKey
-            ?: throw IllegalStateException("Vault key not found in Android Keystore")
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(128, iv))
-        return cipher.doFinal(ciphertext)
+    private fun openRecipientKey(handle: ByteArray): Map<String, Any> {
+        val alias = String(handle, Charsets.UTF_8)
+        val publicKey = keyStore.getCertificate(alias)?.publicKey as? ECPublicKey
+            ?: throw IllegalStateException("Recipient key not found in Android Keystore")
+        return publicDocument(x963Encode(publicKey))
     }
+
+    private fun sharedSecret(record: Map<String, Any>): ByteArray {
+        val alias = String(record["keyHandle"] as ByteArray, Charsets.UTF_8)
+        val peerPublicKey = record["peerPublicKey"] as ByteArray
+        val privateKey = keyStore.getKey(alias, null) as? PrivateKey
+            ?: throw IllegalStateException("Recipient key not found in Android Keystore")
+        val agreement = KeyAgreement.getInstance("ECDH")
+        agreement.init(privateKey)
+        agreement.doPhase(decodeX963(peerPublicKey), true)
+        return agreement.generateSecret().toFixedLength(32)
+    }
+
+    private fun generateP256KeyPair(alias: String): KeyPair {
+        val generator =
+            KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                generator.initialize(p256Spec(alias, strongBox = true))
+                return generator.generateKeyPair()
+            } catch (_: Exception) {
+                // StrongBox unavailable; fall back to the TEE-backed Keystore.
+            }
+        }
+        generator.initialize(p256Spec(alias, strongBox = false))
+        return generator.generateKeyPair()
+    }
+
+    private fun p256Spec(alias: String, strongBox: Boolean): KeyGenParameterSpec {
+        val builder = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_AGREE_KEY)
+            .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
+        if (strongBox) {
+            builder.setIsStrongBoxBacked(true)
+        }
+        return builder.build()
+    }
+
+    private fun publicDocument(encoded: ByteArray): Map<String, Any> = mapOf(
+        "version" to 1,
+        "suite" to suite,
+        "keyID" to keyID(encoded),
+        "publicKey" to Base64.encodeToString(encoded, Base64.NO_WRAP),
+    )
+
+    private fun x963Encode(publicKey: ECPublicKey): ByteArray {
+        val w = publicKey.w
+        return byteArrayOf(0x04) +
+            w.affineX.toByteArray().toFixedLength(32) +
+            w.affineY.toByteArray().toFixedLength(32)
+    }
+
+    private fun decodeX963(encoded: ByteArray): ECPublicKey {
+        require(encoded.size == 65 && encoded[0] == 0x04.toByte()) {
+            "Invalid X9.63 public key"
+        }
+        val x = BigInteger(1, encoded.copyOfRange(1, 33))
+        val y = BigInteger(1, encoded.copyOfRange(33, 65))
+        val params = AlgorithmParameters.getInstance("EC")
+        params.init(ECGenParameterSpec("secp256r1"))
+        val spec = params.getParameterSpec(ECParameterSpec::class.java)
+        val factory = KeyFactory.getInstance("EC")
+        return factory.generatePublic(ECPublicKeySpec(ECPoint(x, y), spec)) as ECPublicKey
+    }
+
+    private fun keyID(publicKey: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(publicKey)
+            .joinToString("") { "%02x".format(it) }
 
     private fun isHardwareBacked(): Boolean {
         hardwareBacked?.let { return it }
@@ -139,5 +217,12 @@ class SecureKeysPlugin :
             builder.setIsStrongBoxBacked(true)
         }
         return builder.build()
+    }
+
+    private fun ByteArray.toFixedLength(length: Int): ByteArray {
+        if (size >= length) return copyOfRange(size - length, size)
+        val padded = ByteArray(length)
+        copyInto(padded, length - size)
+        return padded
     }
 }

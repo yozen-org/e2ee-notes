@@ -1,19 +1,70 @@
-import 'dart:typed_data';
+import 'package:flutter/services.dart';
 
-final class ProtectedVaultKey {
-  const ProtectedVaultKey({
-    required this.alias,
-    required this.iv,
-    required this.ciphertext,
-  });
+import '../hardware_key_backend.dart';
+import '../key_capabilities.dart';
+import '../recipient_key.dart';
+import '../recipient_public_key.dart';
+export '../recipient_key.dart';
+export '../recipient_public_key.dart';
 
-  final String alias;
-  final Uint8List iv;
-  final Uint8List ciphertext;
-}
+/// Android Keystore implementation of [HardwareKeyBackend]. Generates a P-256
+/// recipient key and computes ECDH shared secrets; the envelope crypto lives in
+/// Dart.
+final class AndroidKeystoreKeys implements HardwareKeyBackend {
+  AndroidKeystoreKeys({MethodChannel? channel})
+    : _channel = channel ?? const MethodChannel('secure_keys');
 
-abstract interface class AndroidKeystoreKeys {
-  Future<bool> isAvailable();
-  Future<ProtectedVaultKey> protect(Uint8List vaultKey);
-  Future<Uint8List> unprotect(ProtectedVaultKey protected);
+  final MethodChannel _channel;
+
+  @override
+  Future<KeyCapabilities> capabilities() async {
+    final caps = (await _channel.invokeMapMethod<String, Object?>(
+      'capabilities',
+    ))!;
+    final available = caps['available'] as bool && caps['hardwareBacked'] as bool;
+    return KeyCapabilities(
+      hardwareBacked: available,
+      sharing: available,
+      userPresence: false,
+    );
+  }
+
+  @override
+  Future<RecipientKey> createRecipientKey({
+    required bool requireUserPresence,
+  }) async {
+    if (requireUserPresence) {
+      throw UnsupportedError('Android Keystore user presence is unsupported');
+    }
+    final result = (await _channel.invokeMapMethod<String, Object?>(
+      'createRecipientKey',
+    ))!;
+    return RecipientKey(
+      handle: result['keyHandle']! as Uint8List,
+      publicKey: RecipientPublicKey.fromMap(
+        result['publicKey']! as Map<Object?, Object?>,
+      ),
+    );
+  }
+
+  @override
+  Future<RecipientKey> openRecipientKey(Uint8List keyHandle) async {
+    final result = (await _channel.invokeMapMethod<String, Object?>(
+      'openRecipientKey',
+      {'keyHandle': keyHandle},
+    ))!;
+    return RecipientKey(
+      handle: keyHandle,
+      publicKey: RecipientPublicKey.fromMap(result),
+    );
+  }
+
+  @override
+  Future<Uint8List> sharedSecret({
+    required Uint8List keyHandle,
+    required Uint8List peerPublicKey,
+  }) async => (await _channel.invokeMethod<Uint8List>('sharedSecret', {
+    'keyHandle': keyHandle,
+    'peerPublicKey': peerPublicKey,
+  }))!;
 }
