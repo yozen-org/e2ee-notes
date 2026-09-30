@@ -2,7 +2,7 @@ name: e2ee_notes
 description: "Storage-independent end-to-end encrypted notes."
 publish_to: 'none'
 
-version: 1.0.0+5
+version: 1.0.0+6
 
 environment:
   sdk: ^3.13.0
