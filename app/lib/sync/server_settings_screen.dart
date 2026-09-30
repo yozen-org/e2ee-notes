@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import 'exchange_server_settings.dart';
 
 class ServerSettingsScreen extends StatefulWidget {
@@ -32,22 +33,24 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   Future<void> _save() async {
     await saveExchangeServerUrl(_controller.text);
     if (mounted) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('保存しました')));
+      ).showSnackBar(SnackBar(content: Text(l10n.saved)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('交換サーバー設定')),
+      appBar: AppBar(title: Text(l10n.serverSettings)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('交換サーバーの URL（自己ホスト先を指定できます）'),
+            Text(l10n.serverSettingsLabel),
             const SizedBox(height: 8),
             TextField(
               controller: _controller,
@@ -59,7 +62,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            FilledButton(onPressed: _save, child: const Text('保存')),
+            FilledButton(onPressed: _save, child: Text(l10n.save)),
           ],
         ),
       ),

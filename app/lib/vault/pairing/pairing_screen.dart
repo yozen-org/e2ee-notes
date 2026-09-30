@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:secure_keys/secure_keys.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../notes/logic/notes_service.dart';
 import '../../notes/ui/notes_screen.dart';
 import '../../sync/exchange_server_settings.dart';
@@ -27,14 +28,15 @@ class PairingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('端末ペアリング')),
+      appBar: AppBar(title: Text(l10n.pairingTitle)),
       body: ListView(
         children: [
           ListTile(
             leading: const Icon(Icons.ios_share),
-            title: const Text('この端末から送信'),
-            subtitle: const Text('相手の QR を読み取り、この端末のデータを渡します'),
+            title: Text(l10n.pairingSend),
+            subtitle: Text(l10n.pairingSendSubtitle),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => _SendPage(secureKey: secureKey, vault: vault),
@@ -43,8 +45,8 @@ class PairingScreen extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.download),
-            title: const Text('別の端末から受信'),
-            subtitle: const Text('この端末に別の端末のデータを取り込みます'),
+            title: Text(l10n.pairingReceive),
+            subtitle: Text(l10n.pairingReceiveSubtitle),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => _ReceivePage(secureKey: secureKey)),
             ),
@@ -52,8 +54,8 @@ class PairingScreen extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.settings),
-            title: const Text('交換サーバー設定'),
-            subtitle: const Text('同期先のサーバー URL を設定します'),
+            title: Text(l10n.serverSettings),
+            subtitle: Text(l10n.serverSettingsSubtitle),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const ServerSettingsScreen()),
             ),
@@ -95,21 +97,23 @@ class _SendPageState extends State<_SendPage> {
   }
 
   void _showError() {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('QR コードの読み取りに失敗しました')));
+    ).showSnackBar(SnackBar(content: Text(l10n.scanQrFailed)));
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final qr = _envelopeQr;
     return Scaffold(
-      appBar: AppBar(title: const Text('送信')),
+      appBar: AppBar(title: Text(l10n.pairingSendTitle)),
       body: qr == null
           ? Center(
             child: FilledButton(
               onPressed: _scanRecipient,
-              child: const Text('相手の QR をスキャン'),
+              child: Text(l10n.scanRecipientQr),
             ),
           )
           : Center(
@@ -118,7 +122,7 @@ class _SendPageState extends State<_SendPage> {
               children: [
                 QrImageView(data: qr, size: 240),
                 const SizedBox(height: 16),
-                const Text('この QR を相手に読み取らせてください'),
+                Text(l10n.showQrToOther),
               ],
             ),
           ),
@@ -202,19 +206,21 @@ class _ReceivePageState extends State<_ReceivePage> {
   }
 
   void _showError() {
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('処理に失敗しました')));
+    ).showSnackBar(SnackBar(content: Text(l10n.pairingFailed)));
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_busy) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final qr = _publicKeyQr;
     return Scaffold(
-      appBar: AppBar(title: const Text('受信')),
+      appBar: AppBar(title: Text(l10n.pairingReceiveTitle)),
       body: qr == null
           ? const Center(child: CircularProgressIndicator())
           : Center(
@@ -223,11 +229,11 @@ class _ReceivePageState extends State<_ReceivePage> {
               children: [
                 QrImageView(data: qr, size: 240),
                 const SizedBox(height: 16),
-                const Text('この QR を相手に読み取らせてください'),
+                Text(l10n.showQrToOther),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: _scanEnvelope,
-                  child: const Text('スキャンして続行'),
+                  child: Text(l10n.scanAndContinue),
                 ),
               ],
             ),
@@ -254,8 +260,9 @@ class _ScanPageState extends State<_ScanPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('QR コードをスキャン')),
+      appBar: AppBar(title: Text(l10n.scanQrTitle)),
       body: MobileScanner(
         onDetect: (capture) {
           for (final barcode in capture.barcodes) {

@@ -187,6 +187,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get continueAction;
+
+  /// No description provided for @pairingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device pairing'**
+  String get pairingTitle;
+
+  /// No description provided for @pairingSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send from this device'**
+  String get pairingSend;
+
+  /// No description provided for @pairingSendSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the other device\'s QR code to hand over this device\'s data'**
+  String get pairingSendSubtitle;
+
+  /// No description provided for @pairingReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive from another device'**
+  String get pairingReceive;
+
+  /// No description provided for @pairingReceiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring another device\'s data into this one'**
+  String get pairingReceiveSubtitle;
+
+  /// No description provided for @pairingSendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get pairingSendTitle;
+
+  /// No description provided for @scanRecipientQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the other device\'s QR code'**
+  String get scanRecipientQr;
+
+  /// No description provided for @showQrToOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Have the other device scan this QR code'**
+  String get showQrToOther;
+
+  /// No description provided for @pairingReceiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive'**
+  String get pairingReceiveTitle;
+
+  /// No description provided for @scanAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to continue'**
+  String get scanAndContinue;
+
+  /// No description provided for @scanQrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get scanQrTitle;
+
+  /// No description provided for @scanQrFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to read the QR code'**
+  String get scanQrFailed;
+
+  /// No description provided for @pairingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed'**
+  String get pairingFailed;
+
+  /// No description provided for @serverSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange server settings'**
+  String get serverSettings;
+
+  /// No description provided for @serverSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure the sync server URL'**
+  String get serverSettingsSubtitle;
+
+  /// No description provided for @serverSettingsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange server URL (you can point it at a self-hosted server)'**
+  String get serverSettingsLabel;
+
+  /// No description provided for @saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
 }
 
 class _AppLocalizationsDelegate

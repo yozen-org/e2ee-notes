@@ -60,4 +60,58 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get continueAction => '続行';
+
+  @override
+  String get pairingTitle => '端末ペアリング';
+
+  @override
+  String get pairingSend => 'この端末から送信';
+
+  @override
+  String get pairingSendSubtitle => '相手の QR を読み取り、この端末のデータを渡します';
+
+  @override
+  String get pairingReceive => '別の端末から受信';
+
+  @override
+  String get pairingReceiveSubtitle => 'この端末に別の端末のデータを取り込みます';
+
+  @override
+  String get pairingSendTitle => '送信';
+
+  @override
+  String get scanRecipientQr => '相手の QR をスキャン';
+
+  @override
+  String get showQrToOther => 'この QR を相手に読み取らせてください';
+
+  @override
+  String get pairingReceiveTitle => '受信';
+
+  @override
+  String get scanAndContinue => 'スキャンして続行';
+
+  @override
+  String get scanQrTitle => 'QR コードをスキャン';
+
+  @override
+  String get scanQrFailed => 'QR コードの読み取りに失敗しました';
+
+  @override
+  String get pairingFailed => '処理に失敗しました';
+
+  @override
+  String get serverSettings => '交換サーバー設定';
+
+  @override
+  String get serverSettingsSubtitle => '同期先のサーバー URL を設定します';
+
+  @override
+  String get serverSettingsLabel => '交換サーバーの URL（自己ホスト先を指定できます）';
+
+  @override
+  String get saved => '保存しました';
+
+  @override
+  String get save => '保存';
 }

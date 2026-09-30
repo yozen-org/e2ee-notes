@@ -27,7 +27,7 @@ class NoteListPage extends StatelessWidget {
         title: Text(l10n.appTitle),
         actions: [
           IconButton(
-            tooltip: '端末ペアリング',
+            tooltip: l10n.pairingTitle,
             icon: const Icon(Icons.devices),
             onPressed: onPair,
           ),

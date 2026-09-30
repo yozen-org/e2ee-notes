@@ -61,4 +61,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get continueAction => 'Continue';
+
+  @override
+  String get pairingTitle => 'Device pairing';
+
+  @override
+  String get pairingSend => 'Send from this device';
+
+  @override
+  String get pairingSendSubtitle =>
+      'Scan the other device\'s QR code to hand over this device\'s data';
+
+  @override
+  String get pairingReceive => 'Receive from another device';
+
+  @override
+  String get pairingReceiveSubtitle =>
+      'Bring another device\'s data into this one';
+
+  @override
+  String get pairingSendTitle => 'Send';
+
+  @override
+  String get scanRecipientQr => 'Scan the other device\'s QR code';
+
+  @override
+  String get showQrToOther => 'Have the other device scan this QR code';
+
+  @override
+  String get pairingReceiveTitle => 'Receive';
+
+  @override
+  String get scanAndContinue => 'Scan to continue';
+
+  @override
+  String get scanQrTitle => 'Scan QR code';
+
+  @override
+  String get scanQrFailed => 'Failed to read the QR code';
+
+  @override
+  String get pairingFailed => 'Operation failed';
+
+  @override
+  String get serverSettings => 'Exchange server settings';
+
+  @override
+  String get serverSettingsSubtitle => 'Configure the sync server URL';
+
+  @override
+  String get serverSettingsLabel =>
+      'Exchange server URL (you can point it at a self-hosted server)';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get save => 'Save';
 }
