@@ -2,10 +2,20 @@
 
 ブラインドリレー（中継）サーバー。仕様は [`spec/EXCHANGE_SERVER_V1.md`](../spec/EXCHANGE_SERVER_V1.md)。
 
-Cloudflare Workers + KV の参照実装です。暗号化済みペイロードを短命な URL で受け渡します。
+[Hono](https://hono.dev) による参照実装です。同じコードが Cloudflare Workers と
+Node.js（VPS など）の両方で動きます。暗号化済みペイロードを短命な URL で受け渡します。
 サーバーは内容を復号できません。
 
-## デプロイ
+## 実行形態
+
+ストレージだけを差し替えて、同じルーティング・ロジックを再利用します。
+
+| 形態 | ストレージ | 起動方法 |
+|---|---|---|
+| Cloudflare Workers | KV | `wrangler deploy` |
+| セルフホスト（Node.js） | インメモリ | `npm start` |
+
+## Cloudflare Workers にデプロイ
 
 ```sh
 npm install
@@ -14,16 +24,21 @@ wrangler kv namespace create TRANSFERS
 wrangler deploy
 ```
 
-## ローカル実行
+## セルフホスト（Node.js / VPS）
 
 ```sh
-npm run dev
+npm install
+npm start
+# 既定で http://localhost:8787
 ```
+
+Docker や任意の VPS 上で単一プロセスとして動かせます。
 
 ## 環境変数
 
 - `MAX_PAYLOAD_BYTES`: ペイロード最大サイズ（既定 1 MiB）
 - `TTL_SECONDS`: 転送の有効期間（既定 900 秒）
+- `PORT`: セルフホスト時のポート（既定 8787）
 
 ## セルフホスト
 
