@@ -5,6 +5,8 @@ import 'package:secure_keys/secure_keys.dart';
 
 import '../../notes/logic/notes_service.dart';
 import '../../notes/ui/notes_screen.dart';
+import '../../sync/exchange_server_settings.dart';
+import '../../sync/server_settings_screen.dart';
 import '../../sync/sync_vault.dart';
 import '../opened_vault.dart';
 import '../vault_root.dart';
@@ -45,6 +47,15 @@ class PairingScreen extends StatelessWidget {
             subtitle: const Text('この端末に別の端末のデータを取り込みます'),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => _ReceivePage(secureKey: secureKey)),
+            ),
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('交換サーバー設定'),
+            subtitle: const Text('同期先のサーバー URL を設定します'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ServerSettingsScreen()),
             ),
           ),
         ],
@@ -168,7 +179,7 @@ class _ReceivePageState extends State<_ReceivePage> {
         recipientKey: key,
         policy: const KeyPolicy(),
       );
-      await syncVault(vault);
+      await syncVault(vault, serverUrl: await loadExchangeServerUrl());
       final service = await createNotesService(vault);
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(

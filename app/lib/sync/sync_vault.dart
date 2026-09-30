@@ -1,7 +1,11 @@
 import '../vault/opened_vault.dart';
+import 'exchange_server_settings.dart';
 import 'remote_blob_store.dart';
 import 'sync_service.dart';
 import 'vault_namespace.dart';
+
+/// A hook that syncs a vault against the exchange server.
+typedef SyncVault = Future<void> Function(OpenedVault vault);
 
 /// The default exchange server used when none is configured.
 const exchangeServerUrl = 'https://e2eenotes.yozen.org';
@@ -23,7 +27,7 @@ Future<void> syncVault(
 /// the server is unreachable.
 Future<void> syncVaultBestEffort(OpenedVault vault) async {
   try {
-    await syncVault(vault);
+    await syncVault(vault, serverUrl: await loadExchangeServerUrl());
   } on Object {
     // Best-effort.
   }

@@ -40,6 +40,7 @@ void main() {
       App(
         vaultOpener: CallbackVaultOpener((_) async => vault),
         secureKey: SoftwareSecureKey(),
+        sync: (_) async {},
       ),
     );
     await tester.pumpAndSettle();

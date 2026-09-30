@@ -12,11 +12,13 @@ class Bootstrap extends StatefulWidget {
   const Bootstrap({
     required this.vaultOpener,
     required this.secureKey,
+    this.sync = syncVaultBestEffort,
     super.key,
   });
 
   final VaultOpener vaultOpener;
   final SecureKey secureKey;
+  final SyncVault sync;
 
   @override
   State<Bootstrap> createState() => _BootstrapState();
@@ -39,7 +41,7 @@ class _BootstrapState extends State<Bootstrap> {
       final vault = await widget.vaultOpener.open(
         requestKeyPolicy: _requestKeyPolicy,
       );
-      await syncVaultBestEffort(vault);
+      await widget.sync(vault);
       final service = await createNotesService(vault);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -48,6 +50,7 @@ class _BootstrapState extends State<Bootstrap> {
             service: service,
             secureKey: widget.secureKey,
             vault: vault,
+            sync: widget.sync,
           ),
         ),
       );

@@ -23,6 +23,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Bootstrap(
             secureKey: SoftwareSecureKey(),
+            sync: (_) async {},
             vaultOpener: CallbackVaultOpener((requestPolicy) async {
               attempts++;
               if (attempts == 1) throw StateError('failed');

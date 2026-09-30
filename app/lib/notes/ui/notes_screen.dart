@@ -35,12 +35,14 @@ class NotesScreen extends StatefulWidget {
     required this.service,
     required this.secureKey,
     required this.vault,
+    this.sync = syncVaultBestEffort,
     super.key,
   });
 
   final NotesService service;
   final SecureKey secureKey;
   final OpenedVault vault;
+  final SyncVault sync;
 
   @override
   State<NotesScreen> createState() => _NotesScreenState();
@@ -80,7 +82,7 @@ class _NotesScreenState extends State<NotesScreen> {
     );
     if (saved == true && mounted) {
       _reload();
-      syncVaultBestEffort(widget.vault);
+      widget.sync(widget.vault);
     }
   }
 
@@ -88,7 +90,7 @@ class _NotesScreenState extends State<NotesScreen> {
     await widget.service.delete(note.id);
     if (mounted) {
       _reload();
-      syncVaultBestEffort(widget.vault);
+      widget.sync(widget.vault);
     }
   }
 
