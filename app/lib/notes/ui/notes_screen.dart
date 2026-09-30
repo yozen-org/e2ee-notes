@@ -48,13 +48,30 @@ class NotesScreen extends StatefulWidget {
   State<NotesScreen> createState() => _NotesScreenState();
 }
 
-class _NotesScreenState extends State<NotesScreen> {
+class _NotesScreenState extends State<NotesScreen> with WidgetsBindingObserver {
   _NotesState _state = const _NotesLoading();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _resume();
+  }
+
+  Future<void> _resume() async {
+    await widget.sync(widget.vault);
+    if (mounted) await _load();
   }
 
   Future<void> _load() async {
