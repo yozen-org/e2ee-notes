@@ -18,6 +18,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.0
   intl: any
+  mobile_scanner: ^7.0.0
+  qr_flutter: ^4.1.0
   secure_keys:
     path: ../packages/secure_keys
   path_provider: ^2.1.5
