@@ -16,8 +16,8 @@ export function parseSize(value: string | undefined, fallback: number): number {
 export function createApp(store: ObjectStore, config: AppConfig): Hono {
   const app = new Hono();
 
-  app.put('/v1/objects/*', async (c) => {
-    const key = c.req.param('*')!;
+  app.put('/v1/objects/:key{.+}', async (c) => {
+    const key = c.req.param('key');
     const body = await c.req.arrayBuffer();
     if (body.byteLength > config.maxPayloadBytes) {
       return c.json({ error: 'payload_too_large' }, 413);
@@ -31,8 +31,8 @@ export function createApp(store: ObjectStore, config: AppConfig): Hono {
     return c.json(await store.list(prefix));
   });
 
-  app.get('/v1/objects/*', async (c) => {
-    const value = await store.get(c.req.param('*')!);
+  app.get('/v1/objects/:key{.+}', async (c) => {
+    const value = await store.get(c.req.param('key'));
     if (value === null) {
       return c.json({ error: 'not_found' }, 404);
     }
@@ -41,8 +41,8 @@ export function createApp(store: ObjectStore, config: AppConfig): Hono {
     });
   });
 
-  app.delete('/v1/objects/*', async (c) => {
-    const deleted = await store.delete(c.req.param('*')!);
+  app.delete('/v1/objects/:key{.+}', async (c) => {
+    const deleted = await store.delete(c.req.param('key'));
     if (!deleted) {
       return c.json({ error: 'not_found' }, 404);
     }
