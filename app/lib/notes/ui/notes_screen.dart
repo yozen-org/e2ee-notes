@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:secure_keys/secure_keys.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../sync/sync_vault.dart';
 import '../../vault/opened_vault.dart';
 import '../../vault/pairing/pairing_screen.dart';
 import '../logic/note_record.dart';
@@ -77,12 +78,18 @@ class _NotesScreenState extends State<NotesScreen> {
         ),
       ),
     );
-    if (saved == true && mounted) _reload();
+    if (saved == true && mounted) {
+      _reload();
+      syncVaultBestEffort(widget.vault);
+    }
   }
 
   Future<void> _delete(NoteRecord note) async {
     await widget.service.delete(note.id);
-    if (mounted) _reload();
+    if (mounted) {
+      _reload();
+      syncVaultBestEffort(widget.vault);
+    }
   }
 
   void _openPairing() {

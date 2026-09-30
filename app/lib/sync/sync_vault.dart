@@ -18,3 +18,13 @@ Future<void> syncVault(
   final remote = RemoteBlobStore(baseUrl: serverUrl, namespace: namespace);
   await syncBlobStores(vault.store, remote);
 }
+
+/// Syncs without surfacing failures. The vault keeps working locally even when
+/// the server is unreachable.
+Future<void> syncVaultBestEffort(OpenedVault vault) async {
+  try {
+    await syncVault(vault);
+  } on Object {
+    // Best-effort.
+  }
+}
