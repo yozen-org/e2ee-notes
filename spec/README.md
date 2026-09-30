@@ -11,12 +11,14 @@
 
 - [操作プロトコル v1](OPERATION_V1.md)
 - [保管庫の鍵エンベローププロトコル v1](KEY_ENVELOPE_V1.md)
+- [交換サーバープロトコル v1](EXCHANGE_SERVER_V1.md)
 
 ## 読み方
 
 - `schemas/`: 各JSON形式のフィールドと制約を定義するJSON Schema。
 - `test-vectors/`: 言語間で同じ暗号化結果になることを確認する固定の入力と期待値。
 - `../reference/go/`: Goの標準ライブラリによる独立した操作暗号化の検証コード。
+- `../exchange-server/`: 交換サーバープロトコルの参照実装（Cloudflare Workers）。
 
 フィールド名、アルゴリズム名、暗号処理に使う固定文字列はプロトコルの一部なので、
 日本語には置き換えません。テストベクターの固定鍵とnonceは検証専用です。
