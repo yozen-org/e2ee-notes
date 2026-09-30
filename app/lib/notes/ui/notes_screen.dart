@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:secure_keys/secure_keys.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../vault/opened_vault.dart';
+import '../../vault/pairing/pairing_screen.dart';
 import '../logic/note_record.dart';
 import '../logic/notes_service.dart';
 import 'note_detail_page.dart';
@@ -27,9 +30,16 @@ final class _NotesReady extends _NotesState {
 }
 
 class NotesScreen extends StatefulWidget {
-  const NotesScreen({required this.service, super.key});
+  const NotesScreen({
+    required this.service,
+    required this.secureKey,
+    required this.vault,
+    super.key,
+  });
 
   final NotesService service;
+  final SecureKey secureKey;
+  final OpenedVault vault;
 
   @override
   State<NotesScreen> createState() => _NotesScreenState();
@@ -75,6 +85,17 @@ class _NotesScreenState extends State<NotesScreen> {
     if (mounted) _reload();
   }
 
+  void _openPairing() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PairingScreen(
+          secureKey: widget.secureKey,
+          vault: widget.vault,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => switch (_state) {
         _NotesLoading() => const Scaffold(
@@ -86,6 +107,7 @@ class _NotesScreenState extends State<NotesScreen> {
           onOpen: _openDetail,
           onCreate: () => _openDetail(null),
           onDelete: _delete,
+          onPair: _openPairing,
         ),
       };
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:e2ee_notes/storage/blob_store.dart';
 import 'package:e2ee_notes/vault/opened_vault.dart';
+import 'package:secure_keys/src/software_secure_key.dart';
 
 import 'support/callback_vault_opener.dart';
 
@@ -36,7 +37,10 @@ void main() {
       deviceId: 'a' * 64,
     );
     await tester.pumpWidget(
-      App(vaultOpener: CallbackVaultOpener((_) async => vault)),
+      App(
+        vaultOpener: CallbackVaultOpener((_) async => vault),
+        secureKey: SoftwareSecureKey(),
+      ),
     );
     await tester.pumpAndSettle();
 

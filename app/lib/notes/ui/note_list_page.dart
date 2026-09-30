@@ -9,6 +9,7 @@ class NoteListPage extends StatelessWidget {
     required this.onOpen,
     required this.onCreate,
     required this.onDelete,
+    required this.onPair,
     super.key,
   });
 
@@ -16,11 +17,22 @@ class NoteListPage extends StatelessWidget {
   final void Function(NoteRecord note) onOpen;
   final void Function() onCreate;
   final void Function(NoteRecord note) onDelete;
+  final void Function() onPair;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.appTitle),
+        actions: [
+          IconButton(
+            tooltip: '端末ペアリング',
+            icon: const Icon(Icons.devices),
+            onPressed: onPair,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: _NotesList(
           notes: notes,

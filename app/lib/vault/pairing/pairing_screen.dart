@@ -1,0 +1,261 @@
+import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:secure_keys/secure_keys.dart';
+
+import '../../notes/logic/notes_service.dart';
+import '../../notes/ui/notes_screen.dart';
+import '../../sync/sync_vault.dart';
+import '../opened_vault.dart';
+import '../vault_root.dart';
+import 'import_vault.dart';
+import 'pairing_qr.dart';
+
+/// Entry point for pairing two devices. The vault key is exchanged directly
+/// via QR; the encrypted operation log is synced over the exchange server.
+class PairingScreen extends StatelessWidget {
+  const PairingScreen({
+    required this.secureKey,
+    required this.vault,
+    super.key,
+  });
+
+  final SecureKey secureKey;
+  final OpenedVault vault;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('端末ペアリング')),
+      body: ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.ios_share),
+            title: const Text('この端末から送信'),
+            subtitle: const Text('相手の QR を読み取り、この端末のデータを渡します'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => _SendPage(secureKey: secureKey, vault: vault),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.download),
+            title: const Text('別の端末から受信'),
+            subtitle: const Text('この端末に別の端末のデータを取り込みます'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => _ReceivePage(secureKey: secureKey)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SendPage extends StatefulWidget {
+  const _SendPage({required this.secureKey, required this.vault});
+
+  final SecureKey secureKey;
+  final OpenedVault vault;
+
+  @override
+  State<_SendPage> createState() => _SendPageState();
+}
+
+class _SendPageState extends State<_SendPage> {
+  String? _envelopeQr;
+
+  Future<void> _scanRecipient() async {
+    final value = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const _ScanPage()),
+    );
+    if (value == null || !mounted) return;
+    try {
+      final recipient = decodeRecipientQr(value);
+      final envelope = await widget.secureKey.envelope(
+        widget.vault.vaultKey,
+        recipient,
+      );
+      if (mounted) setState(() => _envelopeQr = encodeEnvelopeQr(envelope));
+    } on Object {
+      if (mounted) _showError();
+    }
+  }
+
+  void _showError() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('QR コードの読み取りに失敗しました')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final qr = _envelopeQr;
+    return Scaffold(
+      appBar: AppBar(title: const Text('送信')),
+      body: qr == null
+          ? Center(
+            child: FilledButton(
+              onPressed: _scanRecipient,
+              child: const Text('相手の QR をスキャン'),
+            ),
+          )
+          : Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                QrImageView(data: qr, size: 240),
+                const SizedBox(height: 16),
+                const Text('この QR を相手に読み取らせてください'),
+              ],
+            ),
+          ),
+    );
+  }
+}
+
+class _ReceivePage extends StatefulWidget {
+  const _ReceivePage({required this.secureKey});
+
+  final SecureKey secureKey;
+
+  @override
+  State<_ReceivePage> createState() => _ReceivePageState();
+}
+
+class _ReceivePageState extends State<_ReceivePage> {
+  RecipientKey? _recipientKey;
+  String? _publicKeyQr;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepare();
+  }
+
+  Future<void> _prepare() async {
+    try {
+      final key = await widget.secureKey.createRecipientKey(
+        policy: const KeyPolicy(),
+      );
+      if (mounted) {
+        setState(() {
+          _recipientKey = key;
+          _publicKeyQr = encodeRecipientQr(key.publicKey);
+        });
+      }
+    } on Object {
+      if (mounted) _showError();
+    }
+  }
+
+  Future<void> _scanEnvelope() async {
+    final value = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const _ScanPage()),
+    );
+    final key = _recipientKey;
+    if (value == null || key == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final envelope = decodeEnvelopeQr(value);
+      final root = await vaultRoot();
+      final vault = await importVault(
+        root,
+        secureKey: widget.secureKey,
+        envelope: envelope,
+        recipientKey: key,
+        policy: const KeyPolicy(),
+      );
+      await syncVault(vault);
+      final service = await createNotesService(vault);
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => NotesScreen(
+              service: service,
+              secureKey: widget.secureKey,
+              vault: vault,
+            ),
+          ),
+          (_) => false,
+        );
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _busy = false);
+        _showError();
+      }
+    }
+  }
+
+  void _showError() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('処理に失敗しました')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_busy) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final qr = _publicKeyQr;
+    return Scaffold(
+      appBar: AppBar(title: const Text('受信')),
+      body: qr == null
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                QrImageView(data: qr, size: 240),
+                const SizedBox(height: 16),
+                const Text('この QR を相手に読み取らせてください'),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _scanEnvelope,
+                  child: const Text('スキャンして続行'),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+}
+
+class _ScanPage extends StatefulWidget {
+  const _ScanPage();
+
+  @override
+  State<_ScanPage> createState() => _ScanPageState();
+}
+
+class _ScanPageState extends State<_ScanPage> {
+  bool _handled = false;
+
+  void _handle(String value) {
+    if (_handled) return;
+    _handled = true;
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QR コードをスキャン')),
+      body: MobileScanner(
+        onDetect: (capture) {
+          for (final barcode in capture.barcodes) {
+            final value = barcode.rawValue;
+            if (value != null) {
+              _handle(value);
+              break;
+            }
+          }
+        },
+      ),
+    );
+  }
+}

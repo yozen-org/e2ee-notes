@@ -10,9 +10,14 @@ import 'vault/opened_vault.dart';
 import 'vault/vault_opener/vault_opener.dart';
 
 class Bootstrap extends StatefulWidget {
-  const Bootstrap({required this.vaultOpener, super.key});
+  const Bootstrap({
+    required this.vaultOpener,
+    required this.secureKey,
+    super.key,
+  });
 
   final VaultOpener vaultOpener;
+  final SecureKey secureKey;
 
   @override
   State<Bootstrap> createState() => _BootstrapState();
@@ -39,7 +44,13 @@ class _BootstrapState extends State<Bootstrap> {
       final service = await createNotesService(vault);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => NotesScreen(service: service)),
+        MaterialPageRoute(
+          builder: (_) => NotesScreen(
+            service: service,
+            secureKey: widget.secureKey,
+            vault: vault,
+          ),
+        ),
       );
     } catch (error) {
       if (mounted) setState(() => _error = error);

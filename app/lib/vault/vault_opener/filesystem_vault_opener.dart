@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:e2ee_notes/storage/filesystem_blob_store.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:secure_keys/secure_keys.dart';
 
 import '../file_vault_key_storage.dart';
@@ -11,6 +10,7 @@ import '../legacy_vault_key_migration.dart';
 import '../opened_vault.dart';
 import '../read_or_create_random_bytes.dart';
 import '../vault_key_service.dart';
+import '../vault_root.dart';
 import 'vault_opener.dart';
 
 final class FilesystemVaultOpener implements VaultOpener {
@@ -20,9 +20,9 @@ final class FilesystemVaultOpener implements VaultOpener {
 
   @override
   Future<OpenedVault> open({required RequestKeyPolicy requestKeyPolicy}) async {
-    final support = await getApplicationSupportDirectory();
+    final root = await vaultRoot();
     return openAt(
-      Directory(p.join(support.path, 'e2ee-notes')),
+      root,
       requestKeyPolicy: requestKeyPolicy,
     );
   }

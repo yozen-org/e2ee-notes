@@ -6,6 +6,7 @@ import 'package:e2ee_notes/vault/opened_vault.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:secure_keys/secure_keys.dart';
+import 'package:secure_keys/src/software_secure_key.dart';
 
 import 'support/callback_vault_opener.dart';
 import 'widget_test.dart' show MemoryStore;
@@ -21,6 +22,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Bootstrap(
+            secureKey: SoftwareSecureKey(),
             vaultOpener: CallbackVaultOpener((requestPolicy) async {
               attempts++;
               if (attempts == 1) throw StateError('failed');
