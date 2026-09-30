@@ -21,3 +21,7 @@ final class ObjectNotFound extends StorageException {
 final class ObjectConflict extends StorageException {
   const ObjectConflict(super.key);
 }
+
+final class StorageFailure extends StorageException {
+  const StorageFailure(super.key);
+}

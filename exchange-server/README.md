@@ -1,10 +1,11 @@
 # Exchange Server
 
-ブラインドリレー（中継）サーバー。仕様は [`spec/EXCHANGE_SERVER_V1.md`](../spec/EXCHANGE_SERVER_V1.md)。
+暗号化されたオブジェクトを端末間で継続同期するための、ゼロ知識の永続 BlobStore
+サーバー。仕様は [`spec/EXCHANGE_SERVER_V1.md`](../spec/EXCHANGE_SERVER_V1.md)。
 
 [Hono](https://hono.dev) による参照実装です。同じコードが Cloudflare Workers と
-Node.js（VPS など）の両方で動きます。暗号化済みペイロードを短命な URL で受け渡します。
-サーバーは内容を復号できません。
+Node.js（VPS など）の両方で動きます。サーバーはキーと値を不透明なバイト列として
+扱い、内容を復号できません。
 
 ## 実行形態
 
@@ -15,12 +16,19 @@ Node.js（VPS など）の両方で動きます。暗号化済みペイロード
 | Cloudflare Workers | KV | `wrangler deploy` |
 | セルフホスト（Node.js） | インメモリ | `npm start` |
 
+## API
+
+- `PUT /v1/objects/{key}` — オブジェクト保存（不変・追記）
+- `GET /v1/objects/{key}` — 取得
+- `GET /v1/objects?prefix={prefix}` — キー一覧
+- `DELETE /v1/objects/{key}` — 削除
+
 ## Cloudflare Workers にデプロイ
 
 ```sh
 npm install
-wrangler kv namespace create TRANSFERS
-# wrangler.toml の id を上記の出力に差し替える
+wrangler kv namespace create OBJECTS
+# wrangler.jsonc の id を上記の出力に差し替える
 wrangler deploy
 ```
 
@@ -36,8 +44,7 @@ Docker や任意の VPS 上で単一プロセスとして動かせます。
 
 ## 環境変数
 
-- `MAX_PAYLOAD_BYTES`: ペイロード最大サイズ（既定 1 MiB）
-- `TTL_SECONDS`: 転送の有効期間（既定 900 秒）
+- `MAX_PAYLOAD_BYTES`: 値の最大サイズ（既定 1 MiB）
 - `PORT`: セルフホスト時のポート（既定 8787）
 
 ## セルフホスト

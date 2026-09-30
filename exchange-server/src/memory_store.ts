@@ -1,25 +1,25 @@
-import type { TransferStore } from './transfer_store';
+import type { ObjectStore } from './object_store';
 
-interface Entry {
-  payload: string;
-  expiresAt: number;
-}
+export class MemoryObjectStore implements ObjectStore {
+  private readonly objects = new Map<string, ArrayBuffer>();
 
-export class MemoryStore implements TransferStore {
-  private readonly entries = new Map<string, Entry>();
-
-  async put(token: string, payload: string, ttlSeconds: number): Promise<void> {
-    this.entries.set(token, {
-      payload,
-      expiresAt: Date.now() + ttlSeconds * 1000,
-    });
+  async put(key: string, value: ArrayBuffer): Promise<void> {
+    if (!this.objects.has(key)) {
+      this.objects.set(key, value);
+    }
   }
 
-  async consume(token: string): Promise<string | null> {
-    const entry = this.entries.get(token);
-    if (entry === undefined) return null;
-    this.entries.delete(token);
-    if (entry.expiresAt < Date.now()) return null;
-    return entry.payload;
+  async get(key: string): Promise<ArrayBuffer | null> {
+    return this.objects.get(key) ?? null;
+  }
+
+  async list(prefix: string): Promise<string[]> {
+    return [...this.objects.keys()]
+      .filter((key) => key.startsWith(prefix))
+      .sort();
+  }
+
+  async delete(key: string): Promise<boolean> {
+    return this.objects.delete(key);
   }
 }
