@@ -4,7 +4,9 @@ import 'package:secure_keys/secure_keys.dart';
 import 'l10n/app_localizations.dart';
 import 'notes/logic/notes_service.dart';
 import 'notes/ui/notes_screen.dart';
+import 'sync/sync_vault.dart';
 import 'vault/key_policy/key_policy_dialog.dart';
+import 'vault/opened_vault.dart';
 import 'vault/vault_opener/vault_opener.dart';
 
 class Bootstrap extends StatefulWidget {
@@ -33,6 +35,7 @@ class _BootstrapState extends State<Bootstrap> {
       final vault = await widget.vaultOpener.open(
         requestKeyPolicy: _requestKeyPolicy,
       );
+      await _syncVault(vault);
       final service = await createNotesService(vault);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
@@ -40,6 +43,15 @@ class _BootstrapState extends State<Bootstrap> {
       );
     } catch (error) {
       if (mounted) setState(() => _error = error);
+    }
+  }
+
+  /// Best-effort sync. Keeps local notes usable even when the server is down.
+  Future<void> _syncVault(OpenedVault vault) async {
+    try {
+      await syncVault(vault);
+    } on Object {
+      // The vault still opens with its local operation log.
     }
   }
 
